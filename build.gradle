@@ -1,0 +1,72 @@
+allprojects {
+    apply plugin: 'idea'
+    group 'AdDroneCore'
+    version '1.0-ADDRONE'
+}
+
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'maven'
+
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+
+    }
+}
+
+project (':core') {
+    dependencies {
+
+    }
+}
+
+project (':server') {
+    apply plugin: 'application'
+
+    mainClassName = 'com.addrone.ServerMain'
+
+    jar {
+        manifest {
+            attributes 'Main-Class': mainClassName,
+            'Implementation-Version': version,
+            'Implementation-Name': project.name + '-server'
+        }
+
+        from {
+            configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+        }
+    }
+
+    dependencies {
+
+    }
+
+    sourceSets.main.java.srcDirs project(':core').sourceSets.main.java
+}
+
+project (':adapter') {
+    apply plugin: 'application'
+
+    mainClassName = 'com.addrone.AdapterMain'
+
+    jar {
+        manifest {
+            attributes 'Main-Class': mainClassName,
+            'Implementation-Version': version,
+            'Implementation-Name': project.name + '-adapter'
+        }
+
+        from {
+            configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+        }
+    }
+
+    dependencies {
+
+    }
+
+    sourceSets.main.java.srcDirs project(':core').sourceSets.main.java
+}
