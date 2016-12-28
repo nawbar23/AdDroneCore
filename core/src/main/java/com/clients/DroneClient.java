@@ -1,4 +1,4 @@
-package com.serverSocket;
+package com.clients;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
