@@ -5,6 +5,7 @@ import com.multicopter.java.CommInterface;
 import com.multicopter.java.CommMessage;
 import com.multicopter.java.CommTask;
 import com.multicopter.java.data.CalibrationSettings;
+import com.multicopter.java.data.DebugData;
 import com.multicopter.java.data.SignalData;
 import com.multicopter.java.events.CommEvent;
 import com.multicopter.java.events.MessageEvent;
@@ -125,8 +126,9 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                         new SignalData(SignalData.Command.APP_LOOP, SignalData.Parameter.START))) {
                     send(new SignalData(SignalData.Command.APP_LOOP, SignalData.Parameter.ACK).getMessage());
                     state = State.APP_LOOP;
-                    // TODO start comm synchronous task with 20Hz interval for DebugData sending
-                    // TODO it has to be added to runningTasks list (class field)
+                    // starting debug task
+                    debugTask.start();
+                    runningTasks.add(debugTask);
                     System.out.println("App loop started");
                 }
                 break;
@@ -144,6 +146,10 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     send(new SignalData(SignalData.Command.PING_VALUE, signalMsg.getParameterValue()).getMessage());
                 } else if (event.matchSignalData(new SignalData(SignalData.Command.APP_LOOP, SignalData.Parameter.BREAK))) {
                     System.out.println("Disconnect message received, leaving app loop and disconnecting");
+                    // stop all running tasks
+                    for (CommTask task : runningTasks) {
+                        task.stop();
+                    }
                     send(new SignalData(SignalData.Command.APP_LOOP, SignalData.Parameter.BREAK_ACK).getMessage());
                     commInterface.disconnect();
                 } else if (event.matchSignalData(new SignalData(SignalData.Command.FLIGHT_LOOP, SignalData.Parameter.START))) {
@@ -172,4 +178,40 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
             send(message);
         }
     }
+
+    private DebugData getStartDebugData() {
+        DebugData result = new DebugData();
+        result.setRoll((float)Math.toRadians(23.0));
+        result.setPitch((float)Math.toRadians(13.0));
+        result.setYaw((float)Math.toRadians(53.0));
+        result.setLatitude(50.053f);
+        result.setLongitude(19.123f);
+        result.setRelativeAltitude(24.2f);
+        result.setvLoc(3.2f);
+        result.setControllerState(DebugData.ControllerState.HOLD_ALTITUDE);
+        result.setFLagState(DebugData.FlagId.GPS_FIX_3D, true);
+        return result;
+    }
+
+    private CommTask debugTask = new CommTask(25) {
+
+        DebugData previousDebugData = getStartDebugData();
+
+        private DebugData simulateSensors() {
+            return previousDebugData;
+        }
+
+        @Override
+        protected String getTaskName() {
+            return "debug_task";
+        }
+
+        @Override
+        protected void task() {
+            DebugData debugData = simulateSensors();
+            previousDebugData = debugData;
+            System.out.println("Debug: " + debugData.toString());
+            send(debugData.getMessage());
+        }
+    };
 }
