@@ -1,9 +1,8 @@
 package com.addrone;
 
-import com.multicopter.java.CommDispatcher;
-import com.multicopter.java.CommInterface;
-import com.multicopter.java.CommMessage;
-import com.multicopter.java.CommTask;
+import com.multicopter.java.*;
+import com.multicopter.java.actions.CommHandlerAction;
+import com.multicopter.java.actions.FlightLoopAction;
 import com.multicopter.java.data.CalibrationSettings;
 import com.multicopter.java.data.SignalData;
 import com.multicopter.java.events.CommEvent;
@@ -25,12 +24,18 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     private List<CommTask> runningTasks;
 
     private State state;
+    private Flight_state flight_state;
 
     private enum State {
         IDLE,
         CONNECTING_APP_LOOP,
         APP_LOOP,
         FLIGHT_LOOP
+    }
+
+    private enum Flight_state{
+        WAITING_FOR_RUNNING,
+        RUNNING
     }
 
     public CommHandlerSimulator(CommInterface commInterface) {
@@ -134,32 +139,49 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     }
 
     private void handleEventAppLoop(CommEvent event) throws Exception {
-        if (event.getType() == CommEvent.EventType.MESSAGE_RECEIVED){
-            CommMessage msg = ((MessageEvent)event).getMessage();
+        if (event.getType() == CommEvent.EventType.MESSAGE_RECEIVED) {
+            CommMessage msg = ((MessageEvent) event).getMessage();
 
             if (msg.getType() == CommMessage.MessageType.SIGNAL) {
                 SignalData signalMsg = new SignalData(msg);
                 if (signalMsg.getCommand() == SignalData.Command.PING_VALUE) {
                     System.out.println("Ping message received, responding with pong");
                     send(new SignalData(SignalData.Command.PING_VALUE, signalMsg.getParameterValue()).getMessage());
+
                 } else if (event.matchSignalData(new SignalData(SignalData.Command.APP_LOOP, SignalData.Parameter.BREAK))) {
                     System.out.println("Disconnect message received, leaving app loop and disconnecting");
                     send(new SignalData(SignalData.Command.APP_LOOP, SignalData.Parameter.BREAK_ACK).getMessage());
                     commInterface.disconnect();
-                } else if (event.matchSignalData(new SignalData(SignalData.Command.FLIGHT_LOOP, SignalData.Parameter.START))) {
-                    System.out.println("Starting flight loop!");
-                    // TODO handle flight loop starting procedure
                 }
-                // TODO here handle rest of messages that can start actions (flight loop, calibrations...)
-                // TODO for example any action starts with SignalData with command - action name and parameter START
-                // TODO event.matchSignalData(new SignalData(SignalData.Command.???ACTION???, SignalData.Parameter.START)
-                // TODO example of handling FLIGHT_LOOP start above
+
+                else if(event.matchSignalData(new SignalData(SignalData.Command.FLIGHT_LOOP, SignalData.Parameter.START))) {
+                    System.out.println("Flight loop started");
+                    send(new SignalData(SignalData.Command.FLIGHT_LOOP, SignalData.Parameter.ACK).getMessage());
+                    state = State.FLIGHT_LOOP;
+                }
+                // TODO handle flight loop starting procedure
             }
+            // TODO here handle rest of messages that can start actions (flight loop, calibrations...)
+            // TODO for example any action starts with SignalData with command - action name and parameter START
+            // TODO event.matchSignalData(new SignalData(SignalData.Command.???ACTION???, SignalData.Parameter.START)
+            // TODO example of handling FLIGHT_LOOP start above
         }
     }
 
     private void handleEventFlightLoop(CommEvent event) throws Exception {
+        switch (flight_state) {
+            case WAITING_FOR_RUNNING:
+                if (event.matchSignalData(new SignalData(SignalData.Command.FLIGHT_LOOP, SignalData.Parameter.READY))) {
+                    flight_state = Flight_state.RUNNING;
+                }
+                break;
+            case RUNNING:
+                if (event.matchSignalData(new SignalData(SignalData.Command.FLIGHT_LOOP, SignalData.Parameter.READY))) {
+                    System.out.println("Flight loop ready");
 
+                }
+                break;
+        }
     }
 
     private void send (CommMessage message) {
