@@ -129,12 +129,12 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     System.out.println("Calibration procedure done successfully, waiting for final command");
                 } else if (event.matchSignalData(
                         new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.BAD_CRC))) {
-                    System.out.println("Calibration procedure failed, application reports BAD CRC");
+                    System.out.println("Sending calibration failed, application reports BAD_CRC, retransmitting...");
                     calibrationSettingsSendingFails++;
                     sendCalibrationSettings(new CalibrationSettings());
                 } else if (event.matchSignalData(
                         new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.TIMEOUT))) {
-                    System.out.println("Calibration procedure failed, application reports TIMEOUT");
+                    System.out.println("Sending calibration failed, application reports TIMEOUT, retransmitting...");
                     calibrationSettingsSendingFails++;
                     sendCalibrationSettings(new CalibrationSettings());
                 }
