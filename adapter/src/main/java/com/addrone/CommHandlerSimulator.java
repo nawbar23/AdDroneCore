@@ -5,6 +5,7 @@ import com.multicopter.java.CommInterface;
 import com.multicopter.java.CommMessage;
 import com.multicopter.java.CommTask;
 import com.multicopter.java.data.CalibrationSettings;
+import com.multicopter.java.data.ControlData;
 import com.multicopter.java.data.DebugData;
 import com.multicopter.java.data.SignalData;
 import com.multicopter.java.events.CommEvent;
@@ -13,6 +14,8 @@ import com.multicopter.java.events.MessageEvent;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by ebarnaw on 2017-01-03.
@@ -26,6 +29,11 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     private List<CommTask> runningTasks;
 
     private State state;
+
+    private DebugData debugDataToSend = getStartDebugData();
+    private Lock debugDataLock = new ReentrantLock();
+
+    private int calibrationSettingsSendingFails;
 
     private enum State {
         IDLE,
@@ -110,6 +118,7 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     send(new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.READY).getMessage());
                     sendCalibrationSettings(new CalibrationSettings());
                     connectionStage = ConnectionStage.CALIBRATION_ACK;
+                    calibrationSettingsSendingFails = 0;
                 }
                 break;
 
@@ -118,6 +127,21 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                         new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.ACK))) {
                     connectionStage = ConnectionStage.FINAL_COMMAND;
                     System.out.println("Calibration procedure done successfully, waiting for final command");
+                } else if (event.matchSignalData(
+                        new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.BAD_CRC))) {
+                    System.out.println("Calibration procedure failed, application reports BAD CRC");
+                    calibrationSettingsSendingFails++;
+                    // TODO uncomment this when fixed in app
+                    //sendCalibrationSettings(new CalibrationSettings());
+                } else if (event.matchSignalData(
+                        new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.TIMEOUT))) {
+                    System.out.println("Calibration procedure failed, application reports TIMEOUT");
+                    calibrationSettingsSendingFails++;
+                    sendCalibrationSettings(new CalibrationSettings());
+                }
+                System.out.println(calibrationSettingsSendingFails);
+                if (calibrationSettingsSendingFails >= 3) {
+                    throw new Exception("Calibration settings procedure failed, max retransmission limit exceeded!");
                 }
                 break;
 
@@ -147,9 +171,7 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                 } else if (event.matchSignalData(new SignalData(SignalData.Command.APP_LOOP, SignalData.Parameter.BREAK))) {
                     System.out.println("Disconnect message received, leaving app loop and disconnecting");
                     // stop all running tasks
-                    for (CommTask task : runningTasks) {
-                        task.stop();
-                    }
+                    runningTasks.forEach(CommTask::stop);
                     send(new SignalData(SignalData.Command.APP_LOOP, SignalData.Parameter.BREAK_ACK).getMessage());
                     commInterface.disconnect();
                 } else if (event.matchSignalData(new SignalData(SignalData.Command.FLIGHT_LOOP, SignalData.Parameter.START))) {
@@ -173,10 +195,7 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     }
 
     private void sendCalibrationSettings(CalibrationSettings calibrationSettings) {
-        ArrayList<CommMessage> messages = calibrationSettings.getMessages();
-        for (CommMessage message : messages) {
-            send(message);
-        }
+        calibrationSettings.getMessages().forEach(this::send);
     }
 
     private DebugData getStartDebugData() {
@@ -187,20 +206,34 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
         result.setLatitude(50.053f);
         result.setLongitude(19.123f);
         result.setRelativeAltitude(24.2f);
-        result.setvLoc(3.2f);
-        result.setControllerState(DebugData.ControllerState.HOLD_ALTITUDE);
+        result.setVLoc(3.2f);
+        result.setControllerState(DebugData.ControllerState.APPLICATION_LOOP);
         result.setFLagState(DebugData.FlagId.GPS_FIX_3D, true);
         return result;
     }
 
+    private void simulateSensors() {
+        debugDataLock.lock();
+        // TODO simulate changing of debug data parameters
+        debugDataLock.unlock();
+    }
+
+    private void updateDebugData(ControlData controlData) {
+        debugDataLock.lock();
+        debugDataToSend.setControllerState(
+                DebugData.ControllerState.getControllerState(controlData.getCommand().getValue()));
+        debugDataToSend.setSolverMode(controlData.getMode());
+        debugDataLock.unlock();
+    }
+
+    private DebugData getDebugDataToSend() {
+        debugDataLock.lock();
+        DebugData result = new DebugData(debugDataToSend);
+        debugDataLock.unlock();
+        return result;
+    }
+
     private CommTask debugTask = new CommTask(25) {
-
-        DebugData previousDebugData = getStartDebugData();
-
-        private DebugData simulateSensors() {
-            return previousDebugData;
-        }
-
         @Override
         protected String getTaskName() {
             return "debug_task";
@@ -208,8 +241,8 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
 
         @Override
         protected void task() {
-            DebugData debugData = simulateSensors();
-            previousDebugData = debugData;
+            simulateSensors();
+            DebugData debugData = getDebugDataToSend();
             System.out.println("Debug: " + debugData.toString());
             send(debugData.getMessage());
         }
