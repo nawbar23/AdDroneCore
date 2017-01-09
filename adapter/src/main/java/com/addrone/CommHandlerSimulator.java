@@ -131,15 +131,13 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                         new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.BAD_CRC))) {
                     System.out.println("Calibration procedure failed, application reports BAD CRC");
                     calibrationSettingsSendingFails++;
-                    // TODO uncomment this when fixed in app
-                    //sendCalibrationSettings(new CalibrationSettings());
+                    sendCalibrationSettings(new CalibrationSettings());
                 } else if (event.matchSignalData(
                         new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.TIMEOUT))) {
                     System.out.println("Calibration procedure failed, application reports TIMEOUT");
                     calibrationSettingsSendingFails++;
                     sendCalibrationSettings(new CalibrationSettings());
                 }
-                System.out.println(calibrationSettingsSendingFails);
                 if (calibrationSettingsSendingFails >= 3) {
                     throw new Exception("Calibration settings procedure failed, max retransmission limit exceeded!");
                 }
