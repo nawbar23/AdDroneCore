@@ -14,6 +14,5 @@ public class AdapterMain {
         CommHandlerSimulator commHandlerSimulator = new CommHandlerSimulator(tcpServer);
         tcpServer.setListener(commHandlerSimulator);
         tcpServer.connect("",6666);
-
     }
 }
