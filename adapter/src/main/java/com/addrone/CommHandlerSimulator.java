@@ -201,8 +201,8 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
         result.setRoll((float)Math.toRadians(23.0));
         result.setPitch((float)Math.toRadians(13.0));
         result.setYaw((float)Math.toRadians(53.0));
-        result.setLatitude(50.053f);
-        result.setLongitude(19.123f);
+        result.setLatitude(50.034f);
+        result.setLongitude(19.940f);
         result.setRelativeAltitude(24.2f);
         result.setVLoc(3.2f);
         result.setControllerState(DebugData.ControllerState.APPLICATION_LOOP);
@@ -213,6 +213,8 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     private void simulateSensors() {
         debugDataLock.lock();
         // TODO simulate changing of debug data parameters
+        debugDataToSend.setLatitude(debugDataToSend.getLatitude() + (float)Math.random()/10000.0f - 0.00003f);
+        debugDataToSend.setLongitude(debugDataToSend.getLongitude() + (float)Math.random()/10000.0f + 0.00003f);
         debugDataLock.unlock();
     }
 
