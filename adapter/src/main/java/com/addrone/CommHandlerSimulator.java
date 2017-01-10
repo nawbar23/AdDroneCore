@@ -209,6 +209,7 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                         switch (message.getType()) {
                             case AUTOPILOT:
                                 System.out.println("Autopilot mode on");
+                                // Autopilot
                                 break;
                             case CONTROL:
                                 System.out.println("Control data received");
@@ -225,11 +226,11 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
         }
         catch(NullPointerException nullPointerException)
         {
-
+            //STOP Flight loop and go to App loop
         }
         catch(Exception exception)
         {
-
+            //STOP Flight loop and go to App loop
         }
     }
 
