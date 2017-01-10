@@ -12,9 +12,8 @@ public class AdapterMain {
         TcpServer tcpServer = new TcpServer(executorService);
 
         CommHandlerSimulator commHandlerSimulator = new CommHandlerSimulator(tcpServer);
-
         tcpServer.setListener(commHandlerSimulator);
-        tcpServer.connect("localhost",6666);
+        tcpServer.connect("",6666);
 
     }
 }
