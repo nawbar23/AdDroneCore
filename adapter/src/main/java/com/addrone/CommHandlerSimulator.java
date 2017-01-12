@@ -182,6 +182,7 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
 
                 } else if(event.matchSignalData(new SignalData(SignalData.Command.FLIGHT_LOOP, SignalData.Parameter.START))) {
                     System.out.println("Flight loop started");
+                    runningTasks.forEach(CommTask::stop);
                     send(new SignalData(SignalData.Command.FLIGHT_LOOP, SignalData.Parameter.ACK).getMessage());
                     state = State.FLIGHT_LOOP;
                 }
@@ -195,10 +196,11 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     }
 
     private void handleEventFlightLoop(CommEvent event) throws Exception {
-        try {
             switch (flight_state) {
                 case WAITING_FOR_RUNNING:
                     if (event.matchSignalData(new SignalData(SignalData.Command.FLIGHT_LOOP, SignalData.Parameter.READY))) {
+                        debugTask.start();
+                        runningTasks.add(debugTask);
                         flight_state = Flight_state.RUNNING;
                         System.out.println("Flight loop ready");
                     }
@@ -213,25 +215,18 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                                 break;
                             case CONTROL:
                                 System.out.println("Control data received");
-                                ControlData controlData = new ControlData();
+                                ControlData controlData = new ControlData(message);
                                 updateDebugData(controlData);
                                 System.out.println(controlData.toString());
                                 if (controlData.getCommand() == ControlData.ControllerCommand.STOP) {
+                                    send(new SignalData(SignalData.Command.FLIGHT_LOOP, SignalData.Parameter.BREAK_ACK).getMessage());
+                                    System.out.println("I want make you happy");
                                     state = State.APP_LOOP;
                                 }
-                            }
+                        }
                     }
                     break;
             }
-        }
-        catch(NullPointerException nullPointerException)
-        {
-            //STOP Flight loop and go to App loop
-        }
-        catch(Exception exception)
-        {
-            //STOP Flight loop and go to App loop
-        }
     }
 
     private void send (CommMessage message) {
@@ -247,8 +242,8 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
         result.setRoll((float)Math.toRadians(23.0));
         result.setPitch((float)Math.toRadians(13.0));
         result.setYaw((float)Math.toRadians(53.0));
-        result.setLatitude(50.053f);
-        result.setLongitude(19.123f);
+        result.setLatitude(50.034f);
+        result.setLongitude(19.940f);
         result.setRelativeAltitude(24.2f);
         result.setVLoc(3.2f);
         result.setControllerState(DebugData.ControllerState.APPLICATION_LOOP);
@@ -259,6 +254,8 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     private void simulateSensors() {
         debugDataLock.lock();
         // TODO simulate changing of debug data parameters
+        debugDataToSend.setLatitude(debugDataToSend.getLatitude() + (float)Math.random()/10000.0f - 0.00003f);
+        debugDataToSend.setLongitude(debugDataToSend.getLongitude() + (float)Math.random()/10000.0f + 0.00003f);
         debugDataLock.unlock();
     }
 
