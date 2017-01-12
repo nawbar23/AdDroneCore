@@ -84,9 +84,8 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     handleEventCalibrationMagnetometer(event);
                     break;
                 case CALIBRATE_ACCEL:
-                    System.out.println("ELO");
-                    handleEventCalibrationAccelerometer(event);
-                    break;
+                handleEventCalibrationAccelerometer(event);
+                break;
                 default:
                     System.out.println("Error state!");
             }
@@ -204,8 +203,10 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     System.out.println("Starting accelerometer calibration procedure");
                     runningTasks.forEach(CommTask::stop);
                     send(new SignalData(SignalData.Command.CALIBRATE_ACCEL, SignalData.Parameter.ACK).getMessage());
+                    Thread.sleep(500);
+                    send(new SignalData(SignalData.Command.CALIBRATE_ACCEL, SignalData.Parameter.DONE).getMessage());
+                    sendCalibrationSettings(new CalibrationSettings());
                     state = State.CALIBRATE_ACCEL;
-
                 } else if(event.matchSignalData(new SignalData(SignalData.Command.FLIGHT_LOOP, SignalData.Parameter.START))) {
                     System.out.println("Flight loop started");
                     runningTasks.forEach(CommTask::stop);
@@ -303,30 +304,25 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     }
 
     private void handleEventCalibrationAccelerometer(CommEvent event) throws Exception {
-        if (event.matchSignalData(new SignalData(SignalData.Command.CALIBRATE_ACCEL, SignalData.Parameter.NON_STATIC))) {
-            System.out.println("Calibration non-static");
-            send(new SignalData(SignalData.Command.CALIBRATE_ACCEL, SignalData.Parameter.NON_STATIC).getMessage());
-            if (event.matchSignalData(
-                    new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.ACK))) {
-                System.out.println("Calibration procedure done successfully.");
-                send(new SignalData(SignalData.Command.CALIBRATE_ACCEL, SignalData.Parameter.DONE).getMessage());
-            } else if (event.matchSignalData(
-                    new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.BAD_CRC))) {
-                System.out.println("Sending calibration failed, application reports BAD_CRC, retransmitting...");
-                calibrationSettingsSendingFails++;
-                sendCalibrationSettings(new CalibrationSettings());
-            } else if (event.matchSignalData(
-                    new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.TIMEOUT))) {
-                System.out.println("Sending calibration failed, application reports TIMEOUT, retransmitting...");
-                calibrationSettingsSendingFails++;
-                sendCalibrationSettings(new CalibrationSettings());
-            }
-            if (calibrationSettingsSendingFails >= 3) {
-                throw new Exception("Calibration settings procedure failed, max retransmission limit exceeded!");
-            }
+        if (event.matchSignalData(
+                new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.ACK))) {
+            System.out.println("Calibration procedure done successfully.");
             debugTask.start();
             runningTasks.add(debugTask);
             state = State.APP_LOOP;
+        } else if (event.matchSignalData(
+                new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.BAD_CRC))) {
+            System.out.println("Sending calibration failed, application reports BAD_CRC, retransmitting...");
+            calibrationSettingsSendingFails++;
+            sendCalibrationSettings(new CalibrationSettings());
+        } else if (event.matchSignalData(
+                new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.TIMEOUT))) {
+            System.out.println("Sending calibration failed, application reports TIMEOUT, retransmitting...");
+            calibrationSettingsSendingFails++;
+            sendCalibrationSettings(new CalibrationSettings());
+        }
+        if (calibrationSettingsSendingFails >= 3) {
+            throw new Exception("Calibration settings procedure failed, max retransmission limit exceeded!");
         }
     }
 
