@@ -1,9 +1,8 @@
 package com.addrone;
 
-import com.multicopter.java.CommDispatcher;
-import com.multicopter.java.CommInterface;
-import com.multicopter.java.CommMessage;
-import com.multicopter.java.CommTask;
+import com.multicopter.java.*;
+import com.multicopter.java.actions.CommHandlerAction;
+import com.multicopter.java.actions.FlightLoopAction;
 import com.multicopter.java.data.CalibrationSettings;
 import com.multicopter.java.data.ControlData;
 import com.multicopter.java.data.DebugData;
@@ -30,6 +29,7 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
 
     private State state;
     private MagnetometerState magnetometerState;
+    private Flight_state flight_state;
 
     private DebugData debugDataToSend = getStartDebugData();
     private Lock debugDataLock = new ReentrantLock();
@@ -51,6 +51,11 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
         MAGNET_CALIBRATION_DONE
     }
 
+    private enum Flight_state{
+        WAITING_FOR_RUNNING,
+        RUNNING
+    }
+
     public CommHandlerSimulator(CommInterface commInterface) {
         this.commInterface = commInterface;
         this.dispatcher = new CommDispatcher(this);
@@ -58,6 +63,7 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
 
         this.state = State.IDLE;
         this.magnetometerState = MagnetometerState.MAGNET_CALIBRATION_IDLE;
+        this.flight_state = Flight_state.WAITING_FOR_RUNNING;
     }
 
     @Override
@@ -175,23 +181,21 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     }
 
     private void handleEventAppLoop(CommEvent event) throws Exception {
-        if (event.getType() == CommEvent.EventType.MESSAGE_RECEIVED){
-            CommMessage msg = ((MessageEvent)event).getMessage();
+        if (event.getType() == CommEvent.EventType.MESSAGE_RECEIVED) {
+            CommMessage msg = ((MessageEvent) event).getMessage();
 
             if (msg.getType() == CommMessage.MessageType.SIGNAL) {
                 SignalData signalMsg = new SignalData(msg);
                 if (signalMsg.getCommand() == SignalData.Command.PING_VALUE) {
                     System.out.println("Ping message received, responding with pong");
                     send(new SignalData(SignalData.Command.PING_VALUE, signalMsg.getParameterValue()).getMessage());
+
                 } else if (event.matchSignalData(new SignalData(SignalData.Command.APP_LOOP, SignalData.Parameter.BREAK))) {
                     System.out.println("Disconnect message received, leaving app loop and disconnecting");
                     // stop all running tasks
                     runningTasks.forEach(CommTask::stop);
                     send(new SignalData(SignalData.Command.APP_LOOP, SignalData.Parameter.BREAK_ACK).getMessage());
                     commInterface.disconnect();
-                } else if (event.matchSignalData(new SignalData(SignalData.Command.FLIGHT_LOOP, SignalData.Parameter.START))) {
-                    System.out.println("Starting flight loop!");
-                    // TODO handle flight loop starting procedure
                 } else if (event.matchSignalData(new SignalData(SignalData.Command.CALIBRATE_MAGNET, SignalData.Parameter.START))){
                     System.out.println("Starting magnetometer calibration procedure");
                     send(new SignalData(SignalData.Command.CALIBRATE_MAGNET, SignalData.Parameter.ACK).getMessage());
@@ -201,17 +205,54 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     runningTasks.forEach(CommTask::stop);
                     send(new SignalData(SignalData.Command.CALIBRATE_ACCEL, SignalData.Parameter.ACK).getMessage());
                     state = State.CALIBRATE_ACCEL;
+
+                } else if(event.matchSignalData(new SignalData(SignalData.Command.FLIGHT_LOOP, SignalData.Parameter.START))) {
+                    System.out.println("Flight loop started");
+                    runningTasks.forEach(CommTask::stop);
+                    send(new SignalData(SignalData.Command.FLIGHT_LOOP, SignalData.Parameter.ACK).getMessage());
+                    state = State.FLIGHT_LOOP;
                 }
-                // TODO here handle rest of messages that can start actions (flight loop, calibrations...)
-                // TODO for example any action starts with SignalData with command - action name and parameter START
-                // TODO event.matchSignalData(new SignalData(SignalData.Command.???ACTION???, SignalData.Parameter.START)
-                // TODO example of handling FLIGHT_LOOP start above
+                // TODO handle flight loop starting procedure
             }
+            // TODO here handle rest of messages that can start actions (flight loop, calibrations...)
+            // TODO for example any action starts with SignalData with command - action name and parameter START
+            // TODO event.matchSignalData(new SignalData(SignalData.Command.???ACTION???, SignalData.Parameter.START)
+            // TODO example of handling FLIGHT_LOOP start above
         }
     }
 
     private void handleEventFlightLoop(CommEvent event) throws Exception {
-
+            switch (flight_state) {
+                case WAITING_FOR_RUNNING:
+                    if (event.matchSignalData(new SignalData(SignalData.Command.FLIGHT_LOOP, SignalData.Parameter.READY))) {
+                        debugTask.start();
+                        runningTasks.add(debugTask);
+                        flight_state = Flight_state.RUNNING;
+                        System.out.println("Flight loop ready");
+                    }
+                    break;
+                case RUNNING:
+                    if (event.getType() == CommEvent.EventType.MESSAGE_RECEIVED) {
+                        CommMessage message = ((MessageEvent) event).getMessage();
+                        switch (message.getType()) {
+                            case AUTOPILOT:
+                                System.out.println("Autopilot mode on");
+                                // Autopilot
+                                break;
+                            case CONTROL:
+                                System.out.println("Control data received");
+                                ControlData controlData = new ControlData(message);
+                                updateDebugData(controlData);
+                                System.out.println(controlData.toString());
+                                if (controlData.getCommand() == ControlData.ControllerCommand.STOP) {
+                                    send(new SignalData(SignalData.Command.FLIGHT_LOOP, SignalData.Parameter.BREAK_ACK).getMessage());
+                                    System.out.println("I want make you happy");
+                                    state = State.APP_LOOP;
+                                }
+                        }
+                    }
+                    break;
+            }
     }
 
     private void handleEventCalibrationMagnetometer(CommEvent event) throws Exception {

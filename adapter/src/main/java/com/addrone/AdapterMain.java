@@ -12,7 +12,6 @@ public class AdapterMain {
         while (true) {
             ExecutorService executorService = Executors.newCachedThreadPool();
             TcpServer tcpServer = new TcpServer(executorService);
-
             CommHandlerSimulator commHandlerSimulator = new CommHandlerSimulator(tcpServer);
 
             tcpServer.setListener(commHandlerSimulator);
