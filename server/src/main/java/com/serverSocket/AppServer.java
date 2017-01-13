@@ -2,47 +2,75 @@ package com.serverSocket;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.ExecutorService;
 
 /**
  * Created by emergency on 2016-12-21.
  */
 public class AppServer implements Runnable {
-    private Socket socket;
-    private ServerSocket serverSocket;
 
-    public AppServer(ServerSocket serverSocket) {
+    private ExecutorService executorService;
+
+    private ServerSocket serverSocket;
+    private Socket androidAppSocket;
+    private Socket droneServerSocket;
+
+    private DataInputStream droneServerInput;
+    private DataOutputStream droneServerOutput;
+    private DataInputStream androidAppInput;
+    private DataOutputStream androidAppOutput;
+
+    public AppServer(ServerSocket serverSocket, ExecutorService executorService) {
         this.serverSocket = serverSocket;
+        this.executorService = executorService;
     }
     @Override
     public void run(){
-            try{
-                Socket appSocket = new Socket("localhost", 6666);
-                socket = serverSocket.accept();
+        if(droneServerSocket == null) {
+            connectWithDroneServer();
+        }
+        waitForConnectionWithApp();
+        executorService.execute(new DataPipe(droneServerInput, androidAppOutput, this));
+        executorService.execute(new DataPipe(androidAppInput, droneServerOutput, this));
+    }
 
-                DataInputStream droneInput = new DataInputStream((appSocket.getInputStream()));
-                DataOutputStream droneOutput = new DataOutputStream(appSocket.getOutputStream());
+    private void waitForConnectionWithApp() {
+        try {
+            androidAppSocket = serverSocket.accept();
+            androidAppInput = new DataInputStream(androidAppSocket.getInputStream());
+            androidAppOutput = new DataOutputStream(androidAppSocket.getOutputStream());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
-                DataInputStream serverInput = new DataInputStream(socket.getInputStream());
-                DataOutputStream serverOutput = new DataOutputStream(socket.getOutputStream());
-
-                while(true) {
-                    int temp = serverInput.read();
-                    System.out.println(socket.getLocalPort() + " Czytam z apki: " + temp);
-
-                    droneOutput.write(temp);
-                    System.out.println(socket.getLocalPort() + " Wysyłam do DroneServer: " + temp);
-
-                    int temp1 = droneInput.read();
-                    System.out.println(socket.getLocalPort() + " Odbieram od DroneServer: " + temp1);
-
-                    serverOutput.write(temp1);
-                    System.out.println(socket.getLocalPort() + " Wysyłam do apki: " + temp1);
-                }
-
-            }catch(Exception e){
+    private void connectWithDroneServer() {
+        try {
+                //todo narazie na sztywno
+                droneServerSocket = new Socket("localhost", 6666);
+                droneServerInput = new DataInputStream((droneServerSocket.getInputStream()));
+                droneServerOutput = new DataOutputStream(droneServerSocket.getOutputStream());
+            } catch (IOException e) {
                 e.printStackTrace();
-            }
+        }
+    }
+
+    public void restoreConnection() {
+        System.out.println("Proboje ponowic");
+        droneServerSocket = null;
+        run();
+    }
+
+    //todo
+    private void restoreConnectionWithDevice() {
+
+    }
+
+    //todo
+    private void restoreConnectionWithServer() {
+
     }
 }

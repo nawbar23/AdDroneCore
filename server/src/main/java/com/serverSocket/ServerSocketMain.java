@@ -18,16 +18,12 @@ public class ServerSocketMain implements Runnable {
     @Override
     public void run(){
             try{
-                Thread.sleep(1000);
                 ServerSocket serverSocket = new ServerSocket(port);
-
-                System.out.println("Działam na porcie " + port);
-
                 if(port == 7777){
-                    executorService.execute(new AppServer(serverSocket));
+                    executorService.execute(new AppServer(serverSocket, executorService));
                 }
                 else{
-                    executorService.execute(new DroneServer(serverSocket));
+                    executorService.execute(new DroneServer(serverSocket, executorService));
                 }
             }catch(Exception e){
                 e.printStackTrace();
