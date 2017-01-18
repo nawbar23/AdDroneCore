@@ -21,7 +21,7 @@ public class Server implements Runnable {
     private Socket serverSocket;
     private Socket deviceSocket;
 
-    private boolean connectorInititor;
+    private boolean connectorInitiator;
 
 
     private DataInputStream serverInput;
@@ -32,19 +32,18 @@ public class Server implements Runnable {
     public Server(int port, ExecutorService executorService) {
         this.executorService = executorService;
         this.port = port;
-        executorService.execute(this);
     }
 
-    public Server(int port, ExecutorService executorService, boolean connectorInititor, int serverPort) {
+    public Server(int port, ExecutorService executorService, boolean connectorInitiator, int serverPort) {
         this.port = port;
         this.executorService = executorService;
-        this.connectorInititor = connectorInititor;
+        this.connectorInitiator = connectorInitiator;
         this.serverPort = serverPort;
     }
 
     @Override
     public void run() {
-        System.out.println(port);
+        System.out.println(port + getClass().getName());
         try {
             server = new ServerSocket(port);
         } catch (IOException e) {
@@ -69,19 +68,26 @@ public class Server implements Runnable {
 
     private void connectWithServerSocket() {
         try {
-            if(connectorInititor){
-                serverSocket = new Socket("localhost",serverPort);
-                serverInput = new DataInputStream(serverSocket.getInputStream());
-                serverOutput = new DataOutputStream(serverSocket.getOutputStream());
-            }
-            else {
-                serverSocket = server.accept();
-                serverInput = new DataInputStream(serverSocket.getInputStream());
-                serverOutput = new DataOutputStream(serverSocket.getOutputStream());
+            if(serverSocket == null) {
+                if (connectorInitiator) {
+                    serverSocket = new Socket("localhost", serverPort);
+                    serverInput = new DataInputStream(serverSocket.getInputStream());
+                    serverOutput = new DataOutputStream(serverSocket.getOutputStream());
+                } else {
+                    serverSocket = server.accept();
+                    serverInput = new DataInputStream(serverSocket.getInputStream());
+                    serverOutput = new DataOutputStream(serverSocket.getOutputStream());
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void restoreConnection() {
+        System.out.println("Odnawiam polaczenie");
+        deviceSocket = null;
+        run();
     }
 
 //    private void startServerSocket() {

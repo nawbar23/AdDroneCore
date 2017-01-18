@@ -12,23 +12,7 @@ public class DataPipe implements Runnable {
     private Server server;
     private DataInputStream input;
     private DataOutputStream output;
-    //todo zmienic na server
-    private AppServer appServer;
-    //todo
-    private DroneServer droneServer;
-
-    public DataPipe( DataInputStream input, DataOutputStream output, AppServer appServer) {
-        this.input = input;
-        this.output = output;
-        this.appServer = appServer;
-    }
-
-    //todo
-    public DataPipe(DataInputStream input, DataOutputStream output, DroneServer droneServer) {
-        this.input = input;
-        this.output = output;
-        this.droneServer = droneServer;
-    }
+    private byte[] byteArray;
 
     public DataPipe(DataInputStream input, DataOutputStream output, Server server) {
         this.input = input;
@@ -38,16 +22,14 @@ public class DataPipe implements Runnable {
 
     @Override
     public void run() {
-        byte[] temp = new byte[128];
         while(true) {
             try {
-                input.read(temp);
-                output.write(temp);
+                byteArray = new byte[input.available()];
+                input.read(byteArray);
+                output.write(byteArray);
             } catch (IOException e) {
                 e.printStackTrace();
-                if(droneServer == null)
-                    appServer.restoreConnection();
-                else{droneServer.restoreConnection();}
+                server.restoreConnection();
             }
         }
     }

@@ -25,6 +25,7 @@ public class Test {
                 output2.write(temp2);
                 input1.read(temp1);
                 input2.read(temp2);
+                System.out.println(temp1);
             }
 
         } catch (IOException e) {

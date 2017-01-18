@@ -27,10 +27,18 @@ public class TcpServer extends CommInterface implements Runnable  {
 
     private State state;
 
+    private ConnectionType connectionType;
+
+    private enum ConnectionType {
+        SERVER,
+        ADAPTER
+    }
+
     public TcpServer(ExecutorService executorService) {
         super();
         this.executorService = executorService;
         this.state = State.DISCONNECTED;
+        this.connectionType = ConnectionType.ADAPTER;
     }
 
     private enum State {
@@ -69,33 +77,55 @@ public class TcpServer extends CommInterface implements Runnable  {
     @Override
     public void run() {
         DataInputStream inputStream = null;
-        try {
-            serverSocket = new ServerSocket(port);
+        if(connectionType == ConnectionType.ADAPTER) {
+            try {
+                serverSocket = new ServerSocket(port);
 
-            System.out.println("Server started, waiting for connection");
-            socket = serverSocket.accept();
+                System.out.println("Server started, waiting for connection");
+                socket = serverSocket.accept();
 
-            outputStream = new DataOutputStream(socket.getOutputStream());
-            inputStream = new DataInputStream(socket.getInputStream());
+                outputStream = new DataOutputStream(socket.getOutputStream());
+                inputStream = new DataInputStream(socket.getInputStream());
 
-            System.out.println("Client connected, running receiving loop!");
-            state = State.CONNECTED;
-            listener.onConnected();
+                System.out.println("Client connected, running receiving loop!");
+                state = State.CONNECTED;
+                listener.onConnected();
 
-            while(state != State.DISCONNECTING) {
-                byte buffer[] = new byte[1024];
-                int dataSize = inputStream.read(buffer, 0, buffer.length);
-                if (dataSize != -1) {
-                    byte[] tempArray = new byte[dataSize];
-                    System.arraycopy(buffer, 0, tempArray, 0, dataSize);
-                    listener.onDataReceived(tempArray);
+                while (state != State.DISCONNECTING) {
+                    byte buffer[] = new byte[inputStream.available()];
+                    int dataSize = inputStream.read(buffer, 0, buffer.length);
+                    if (dataSize != -1) {
+                        byte[] tempArray = new byte[dataSize];
+                        System.arraycopy(buffer, 0, tempArray, 0, dataSize);
+                        listener.onDataReceived(tempArray);
+                    }
                 }
+            } catch (IOException e) {
+                e.printStackTrace();
+                listener.onError(e);
             }
         }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-            listener.onError(e);
+        else if(connectionType == ConnectionType.SERVER){
+            try {
+                socket =  new Socket("localhost", port);
+                outputStream = new DataOutputStream(socket.getOutputStream());
+                inputStream = new DataInputStream(socket.getInputStream());
+                state = State.CONNECTED;
+                listener.onConnected();;
+
+                while(state != State.DISCONNECTING){
+                    byte buffer[] = new byte[inputStream.available()];
+                    int dataSize = inputStream.read(buffer, 0, buffer.length);
+                    if (dataSize != -1) {
+                        byte[] tempArray = new byte[dataSize];
+                        System.arraycopy(buffer, 0, tempArray, 0, dataSize);
+                        listener.onDataReceived(tempArray);
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                listener.onError(e);
+            }
         }
 
         if (inputStream != null) {
