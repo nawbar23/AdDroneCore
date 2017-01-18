@@ -304,8 +304,7 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     System.out.println("Sending calibration failed, application reports BAD_CRC, retransmitting...");
                     calibrationSettingsSendingFails++;
                     sendCalibrationSettings(new CalibrationSettings());
-                } else if (event.matchSignalData(
-                        new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.TIMEOUT))) {
+                } else if (event.matchSignalData(new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.TIMEOUT))) {
                     System.out.println("Sending calibration failed, application reports TIMEOUT, retransmitting...");
                     calibrationSettingsSendingFails++;
                     sendCalibrationSettings(new CalibrationSettings());
