@@ -1,6 +1,6 @@
 package com.addrone;
 
-import com.serverSocket.ServerSocketMain;
+import com.serverSocket.Server;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -11,7 +11,7 @@ import java.util.concurrent.Executors;
 public class ServerMain {
     public static void main(String[] args) {
         ExecutorService executorService = Executors.newCachedThreadPool();
-        executorService.execute(new ServerSocketMain(7777, executorService));
-        executorService.execute(new ServerSocketMain(6666, executorService));
+        executorService.execute(new Server(7777, executorService));
+        executorService.execute(new Server(6666, executorService,true,7777));
     }
 }

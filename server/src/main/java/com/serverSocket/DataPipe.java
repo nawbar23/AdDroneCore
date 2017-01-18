@@ -9,6 +9,7 @@ import java.io.IOException;
  */
 public class DataPipe implements Runnable {
 
+    private Server server;
     private DataInputStream input;
     private DataOutputStream output;
     //todo zmienic na server
@@ -27,6 +28,12 @@ public class DataPipe implements Runnable {
         this.input = input;
         this.output = output;
         this.droneServer = droneServer;
+    }
+
+    public DataPipe(DataInputStream input, DataOutputStream output, Server server) {
+        this.input = input;
+        this.output = output;
+        this.server = server;
     }
 
     @Override

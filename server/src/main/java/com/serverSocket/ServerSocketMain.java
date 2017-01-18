@@ -17,16 +17,7 @@ public class ServerSocketMain implements Runnable {
 
     @Override
     public void run(){
-            try{
-                ServerSocket serverSocket = new ServerSocket(port);
-                if(port == 7777){
-                    executorService.execute(new AppServer(serverSocket, executorService));
-                }
-                else{
-                    executorService.execute(new DroneServer(serverSocket, executorService));
-                }
-            }catch(Exception e){
-                e.printStackTrace();
-            }
+        executorService.execute(new Server(port, executorService));
+        executorService.execute(new Server(port, executorService));
     }
 }
