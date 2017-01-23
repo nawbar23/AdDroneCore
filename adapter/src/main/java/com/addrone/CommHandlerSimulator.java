@@ -183,6 +183,7 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     }
 
     private void handleEventAppLoop(CommEvent event) throws Exception {
+
         if (event.getType() == CommEvent.EventType.MESSAGE_RECEIVED) {
             CommMessage msg = ((MessageEvent) event).getMessage();
 
@@ -217,13 +218,15 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     state = State.FLIGHT_LOOP;
                 } else if(event.matchSignalData(new SignalData(SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.START))){
                     System.out.println("Uploading control settings");
+                    state = State.UPLOAD_CONTROL_SETTINGS;
+                    uploadStage = UploadControlSettingsStage.INIT;
                     runningTasks.forEach(CommTask::stop);
                     send(new SignalData(SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.ACK).getMessage());
-                    state = State.UPLOAD_CONTROL_SETTINGS;
                 } else if(event.matchSignalData(new SignalData(SignalData.Command.DOWNLOAD_SETTINGS, SignalData.Parameter.START))){
+                    state = State.DOWNLOAD_CONTROL_SETTINGS;
                     System.out.println("Downloading control settings");
                     runningTasks.forEach(CommTask::stop);
-                    state = State.DOWNLOAD_CONTROL_SETTINGS;
+                    send(new SignalData(SignalData.Command.DOWNLOAD_SETTINGS, SignalData.Parameter.ACK).getMessage());
                 }
             }
             // TODO here handle rest of messages that can start actions (flight loop, calibrations...)
@@ -343,11 +346,78 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
         }
     }
 
-    private void handleEventUploadControlSettings(CommEvent event) {
+    private enum UploadControlSettingsStage{
+        INIT,
+        CONTROL_ACK,
+        FINAL
+    }
+    UploadControlSettingsStage uploadStage;
+    private int uploadFails;
+
+    private void handleEventUploadControlSettings(CommEvent event) throws Exception{
+
+        ControlSettings controlSettings = new ControlSettings();
+        controlSettings.setRollProp(15);
+        controlSettings.setPitchProp(16);
+        controlSettings.setYawProp(17);
+
+        //controlSettings.getMessages().forEach(this::send);
+        System.out.println("Upload control settings stage @"+uploadStage.toString());
+        switch (uploadStage) {
+
+            case INIT:
+                System.out.println("Starting Control settings procedure...");
+                uploadFails = 0;
+                send(new SignalData(SignalData.Command.CONTROL_SETTINGS, SignalData.Parameter.READY).getMessage());
+                controlSettings.getMessages().forEach(this::send);
+
+                break;
+
+            case CONTROL_ACK:
+
+                if (event.matchSignalData(
+                        new SignalData(SignalData.Command.CONTROL_SETTINGS, SignalData.Parameter.ACK))) {
+                    uploadStage = UploadControlSettingsStage.FINAL;
+                    System.out.println("Control settings procedure done successfully, waiting for final command");
+                } else if (event.matchSignalData(
+                        new SignalData(SignalData.Command.CONTROL_SETTINGS, SignalData.Parameter.BAD_CRC))) {
+                    System.out.println("Sending Control settings failed, application reports BAD_CRC, retransmitting...");
+                    uploadFails++;
+                    controlSettings.getMessages().forEach(this::send);
+                } else if (event.matchSignalData(
+                        new SignalData(SignalData.Command.CONTROL_SETTINGS, SignalData.Parameter.TIMEOUT))) {
+                    System.out.println("Sending Control settings failed, application reports TIMEOUT, retransmitting...");
+                    uploadFails++;
+                    controlSettings.getMessages().forEach(this::send);
+                }
+                if (uploadFails >= 3) {
+                    uploadStage = UploadControlSettingsStage.FINAL;
+                    System.out.println("Control settings procedure failed, max retransmission limit exceeded!");
+                }
+
+                break;
+            case FINAL:
+                debugTask.start();
+                state = State.APP_LOOP;
+                break;
+        }
     }
 
 
     private void handleEventDownloadControlSettings(CommEvent event) {
+        //TODO #Doing #jeszczeNieZrobione
+
+        if (true){ //if correct data found in internal memmory
+            send(new SignalData(SignalData.Command.DOWNLOAD_SETTINGS, SignalData.Parameter.ACK).getMessage());
+            //pobrać z internala i wyslac
+            System.out.println("Uploading Control Settings...");
+        }
+        else {
+            send(new SignalData(SignalData.Command.DOWNLOAD_SETTINGS, SignalData.Parameter.FAIL).getMessage());
+        }
+        debugTask.start();
+        state = State.APP_LOOP;
+
     }
 
 
