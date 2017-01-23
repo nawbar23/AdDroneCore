@@ -60,7 +60,6 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
         this.runningTasks = new ArrayList<>();
 
         this.state = State.IDLE;
-        this.magnetometerState = MagnetometerState.MAGNET_CALIBRATION_IDLE;
         this.flight_state = Flight_state.WAITING_FOR_RUNNING;
     }
 
@@ -186,7 +185,6 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
 
         if (event.getType() == CommEvent.EventType.MESSAGE_RECEIVED) {
             CommMessage msg = ((MessageEvent) event).getMessage();
-
             if (msg.getType() == CommMessage.MessageType.SIGNAL) {
                 SignalData signalMsg = new SignalData(msg);
                 if (signalMsg.getCommand() == SignalData.Command.PING_VALUE) {
@@ -199,34 +197,42 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     runningTasks.forEach(CommTask::stop);
                     send(new SignalData(SignalData.Command.APP_LOOP, SignalData.Parameter.BREAK_ACK).getMessage());
                     commInterface.disconnect();
+
                 } else if (event.matchSignalData(new SignalData(SignalData.Command.CALIBRATE_MAGNET, SignalData.Parameter.START))){
                     System.out.println("Starting magnetometer calibration procedure");
                     runningTasks.forEach(CommTask::stop);
                     state = State.CALIBRATE_MAGNET;
+                    magnetometerState = MagnetometerState.MAGNET_CALIBRATION_IDLE;
+                    send(new SignalData(SignalData.Command.CALIBRATE_MAGNET, SignalData.Parameter.ACK).getMessage());
+
                 } else if (event.matchSignalData(new SignalData(SignalData.Command.CALIBRATE_ACCEL, SignalData.Parameter.START))){
                     System.out.println("Starting accelerometer calibration procedure");
                     runningTasks.forEach(CommTask::stop);
+                    state = State.CALIBRATE_ACCEL;
                     send(new SignalData(SignalData.Command.CALIBRATE_ACCEL, SignalData.Parameter.ACK).getMessage());
                     Thread.sleep(500);
                     send(new SignalData(SignalData.Command.CALIBRATE_ACCEL, SignalData.Parameter.DONE).getMessage());
                     sendCalibrationSettings(new CalibrationSettings());
-                    state = State.CALIBRATE_ACCEL;
+
                 } else if(event.matchSignalData(new SignalData(SignalData.Command.FLIGHT_LOOP, SignalData.Parameter.START))) {
                     System.out.println("Flight loop started");
                     runningTasks.forEach(CommTask::stop);
                     send(new SignalData(SignalData.Command.FLIGHT_LOOP, SignalData.Parameter.ACK).getMessage());
                     state = State.FLIGHT_LOOP;
+
                 } else if(event.matchSignalData(new SignalData(SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.START))){
                     System.out.println("Uploading control settings");
                     state = State.UPLOAD_CONTROL_SETTINGS;
                     uploadStage = UploadControlSettingsStage.INIT;
                     runningTasks.forEach(CommTask::stop);
                     send(new SignalData(SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.ACK).getMessage());
+
                 } else if(event.matchSignalData(new SignalData(SignalData.Command.DOWNLOAD_SETTINGS, SignalData.Parameter.START))){
                     state = State.DOWNLOAD_CONTROL_SETTINGS;
                     System.out.println("Downloading control settings");
                     runningTasks.forEach(CommTask::stop);
                     send(new SignalData(SignalData.Command.DOWNLOAD_SETTINGS, SignalData.Parameter.ACK).getMessage());
+
                 }
             }
             // TODO here handle rest of messages that can start actions (flight loop, calibrations...)
@@ -273,51 +279,41 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     private void handleEventCalibrationMagnetometer(CommEvent event) throws Exception {
         switch (magnetometerState) {
             case MAGNET_CALIBRATION_IDLE:
-                send(new SignalData(SignalData.Command.CALIBRATE_MAGNET, SignalData.Parameter.ACK).getMessage());
-                sendCalibrationSettings(new CalibrationSettings());
-                magnetometerState = MagnetometerState.MAGNET_CALIBRATION_RUNNING;
-                break;
-
-            case MAGNET_CALIBRATION_RUNNING:
                 if(event.matchSignalData(new SignalData(SignalData.Command.CALIBRATE_MAGNET, SignalData.Parameter.SKIP))){
                     System.out.println("User breaks calibration");
+                    state = State.APP_LOOP;
                     send(new SignalData(SignalData.Command.CALIBRATE_MAGNET, SignalData.Parameter.ACK).getMessage());
                     debugTask.start();
                     runningTasks.add(debugTask);
-                    state = State.APP_LOOP;
                 } else if(event.matchSignalData(new SignalData(SignalData.Command.CALIBRATE_MAGNET, SignalData.Parameter.DONE))){
-                    if(event.matchSignalData(new SignalData(SignalData.Command.CALIBRATION_SETTINGS_DATA, SignalData.Parameter.DATA_ACK))){
-                        System.out.println("Calibration successful");
-                        send(new SignalData(SignalData.Command.CALIBRATE_MAGNET, SignalData.Parameter.DONE).getMessage());
-                        /* CalibrationData procedure */
-                        if (event.matchSignalData(
-                                new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.ACK))) {
-                            System.out.println("Calibration procedure done successfully.");
-                            debugTask.start();
-                            runningTasks.add(debugTask);
-                            state = State.APP_LOOP;
-                        } else if (event.matchSignalData(
-                                new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.BAD_CRC))) {
-                            System.out.println("Sending calibration failed, application reports BAD_CRC, retransmitting...");
-                            calibrationSettingsSendingFails++;
-                            sendCalibrationSettings(new CalibrationSettings());
-                        } else if (event.matchSignalData(
-                                new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.TIMEOUT))) {
-                            System.out.println("Sending calibration failed, application reports TIMEOUT, retransmitting...");
-                            calibrationSettingsSendingFails++;
-                            sendCalibrationSettings(new CalibrationSettings());
-                        }
-                        if (calibrationSettingsSendingFails >= 3) {
-                            throw new Exception("Calibration settings procedure failed, max retransmission limit exceeded!");
-                        }
-                        /* CalibrationData procedure */
-                    } else{
-                        System.out.println("Calibration failed");
-                        send(new SignalData(SignalData.Command.CALIBRATE_MAGNET, SignalData.Parameter.FAIL).getMessage());
-                        debugTask.start();
-                        runningTasks.add(debugTask);
-                        state = State.APP_LOOP;
-                    }
+                    send(new SignalData(SignalData.Command.CALIBRATE_MAGNET, SignalData.Parameter.DONE).getMessage());
+                    sendCalibrationSettings(new CalibrationSettings());
+                    magnetometerState = MagnetometerState.MAGNET_CALIBRATION_RUNNING;
+                }  else{
+                    System.out.println("Calibration failed");
+                    state = State.APP_LOOP;
+                    send(new SignalData(SignalData.Command.CALIBRATE_MAGNET, SignalData.Parameter.FAIL).getMessage());
+                    debugTask.start();
+                    runningTasks.add(debugTask);
+                }
+                break;
+            case MAGNET_CALIBRATION_RUNNING:
+                if (event.matchSignalData(new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.ACK))) {
+                    System.out.println("Calibration procedure done successfully.");
+                    state = State.APP_LOOP;
+                    debugTask.start();
+                    runningTasks.add(debugTask);
+                } else if (event.matchSignalData(new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.BAD_CRC))) {
+                    System.out.println("Sending calibration failed, application reports BAD_CRC, retransmitting...");
+                    calibrationSettingsSendingFails++;
+                    sendCalibrationSettings(new CalibrationSettings());
+                } else if (event.matchSignalData(new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.TIMEOUT))) {
+                    System.out.println("Sending calibration failed, application reports TIMEOUT, retransmitting...");
+                    calibrationSettingsSendingFails++;
+                    sendCalibrationSettings(new CalibrationSettings());
+                }
+                if (calibrationSettingsSendingFails >= 3) {
+                    throw new Exception("Calibration settings procedure failed, max retransmission limit exceeded!");
                 }
                 break;
         }
