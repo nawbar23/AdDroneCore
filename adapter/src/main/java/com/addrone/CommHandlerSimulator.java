@@ -479,5 +479,17 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
             System.out.println("Debug: " + debugData.toString());
             send(debugData.getMessage());
         }
+
+        @Override
+        protected void onStarted() {
+            super.onStarted();
+
+        }
+
+        @Override
+        protected void onStopped() {
+            super.onStopped();
+
+        }
     };
 }
