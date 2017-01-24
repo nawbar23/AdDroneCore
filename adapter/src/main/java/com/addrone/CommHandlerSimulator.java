@@ -411,8 +411,6 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
 
     }
 
-
-
     private void send (CommMessage message) {
         commInterface.send(message.getByteArray());
     }
