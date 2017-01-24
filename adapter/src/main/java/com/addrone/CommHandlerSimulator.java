@@ -27,7 +27,11 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
 
     private State state;
     private MagnetometerState magnetometerState;
-    private Flight_state flight_state;
+    private FlightState flightState;
+
+    private CalibrationSettings calibrationSettings = getStartCalibrationSettings();
+    private ControlSettings controlSettings = getStartControlSettings();
+    private RouteContainer routeContainer = getStartRouteContainer();
 
     private DebugData debugDataToSend = getStartDebugData();
     private Lock debugDataLock = new ReentrantLock();
@@ -50,7 +54,7 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
         MAGNET_CALIBRATION_RUNNING
     }
 
-    private enum Flight_state{
+    private enum FlightState{
         WAITING_FOR_RUNNING,
         RUNNING
     }
@@ -60,7 +64,7 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
         this.dispatcher = new CommDispatcher(this);
 
         this.state = State.IDLE;
-        this.flight_state = Flight_state.WAITING_FOR_RUNNING;
+        this.flightState = FlightState.WAITING_FOR_RUNNING;
     }
 
     @Override
@@ -140,7 +144,7 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     // simulate calibration process (sleep 0.5s)
                     Thread.sleep(500);
                     send(new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.READY).getMessage());
-                    sendCalibrationSettings(new CalibrationSettings());
+                    sendCalibrationSettings(calibrationSettings);
                     connectionStage = ConnectionStage.CALIBRATION_ACK;
                     calibrationSettingsSendingFails = 0;
                 }
@@ -155,12 +159,12 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                         new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.DATA_INVALID))) {
                     System.out.println("Sending calibration failed, application reports DATA_INVALID, retransmitting...");
                     calibrationSettingsSendingFails++;
-                    sendCalibrationSettings(new CalibrationSettings());
+                    sendCalibrationSettings(calibrationSettings);
                 } else if (event.matchSignalData(
                         new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.TIMEOUT))) {
                     System.out.println("Sending calibration failed, application reports TIMEOUT, retransmitting...");
                     calibrationSettingsSendingFails++;
-                    sendCalibrationSettings(new CalibrationSettings());
+                    sendCalibrationSettings(calibrationSettings);
                 }
                 if (calibrationSettingsSendingFails >= 3) {
                     throw new Exception("Calibration settings procedure failed, max retransmission limit exceeded!");
@@ -211,7 +215,7 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     send(new SignalData(SignalData.Command.CALIBRATE_ACCEL, SignalData.Parameter.ACK).getMessage());
                     Thread.sleep(500);
                     send(new SignalData(SignalData.Command.CALIBRATE_ACCEL, SignalData.Parameter.DONE).getMessage());
-                    sendCalibrationSettings(new CalibrationSettings());
+                    sendCalibrationSettings(calibrationSettings);
 
                 } else if(event.matchSignalData(new SignalData(SignalData.Command.FLIGHT_LOOP, SignalData.Parameter.START))) {
                     System.out.println("Flight loop started");
@@ -242,11 +246,11 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     }
 
     private void handleEventFlightLoop(CommEvent event) throws Exception {
-        switch (flight_state) {
+        switch (flightState) {
             case WAITING_FOR_RUNNING:
                 if (event.matchSignalData(new SignalData(SignalData.Command.FLIGHT_LOOP, SignalData.Parameter.READY))) {
                     debugTask.start();
-                    flight_state = Flight_state.RUNNING;
+                    flightState = FlightState.RUNNING;
                     System.out.println("Flight loop ready");
                 }
                 break;
@@ -267,7 +271,7 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                                 send(new SignalData(SignalData.Command.FLIGHT_LOOP, SignalData.Parameter.BREAK_ACK).getMessage());
                                 System.out.println("I want make you happy");
                                 state = State.APP_LOOP;
-                                flight_state =Flight_state.WAITING_FOR_RUNNING;
+                                flightState = FlightState.WAITING_FOR_RUNNING;
                             }
                     }
                 }
@@ -285,7 +289,7 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     debugTask.start();
                 } else if(event.matchSignalData(new SignalData(SignalData.Command.CALIBRATE_MAGNET, SignalData.Parameter.DONE))){
                     send(new SignalData(SignalData.Command.CALIBRATE_MAGNET, SignalData.Parameter.DONE).getMessage());
-                    sendCalibrationSettings(new CalibrationSettings());
+                    sendCalibrationSettings(calibrationSettings);
                     magnetometerState = MagnetometerState.MAGNET_CALIBRATION_RUNNING;
                 }  else{
                     System.out.println("Calibration failed");
@@ -302,11 +306,11 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                 } else if (event.matchSignalData(new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.DATA_INVALID))) {
                     System.out.println("Sending calibration failed, application reports DATA_INVALID, retransmitting...");
                     calibrationSettingsSendingFails++;
-                    sendCalibrationSettings(new CalibrationSettings());
+                    sendCalibrationSettings(calibrationSettings);
                 } else if (event.matchSignalData(new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.TIMEOUT))) {
                     System.out.println("Sending calibration failed, application reports TIMEOUT, retransmitting...");
                     calibrationSettingsSendingFails++;
-                    sendCalibrationSettings(new CalibrationSettings());
+                    sendCalibrationSettings(calibrationSettings);
                 }
                 if (calibrationSettingsSendingFails >= 3) {
                     throw new Exception("Calibration settings procedure failed, max retransmission limit exceeded!");
@@ -325,24 +329,25 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                 new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.DATA_INVALID))) {
             System.out.println("Sending calibration failed, application reports DATA_INVALID, retransmitting...");
             calibrationSettingsSendingFails++;
-            sendCalibrationSettings(new CalibrationSettings());
+            sendCalibrationSettings(calibrationSettings);
         } else if (event.matchSignalData(
                 new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.TIMEOUT))) {
             System.out.println("Sending calibration failed, application reports TIMEOUT, retransmitting...");
             calibrationSettingsSendingFails++;
-            sendCalibrationSettings(new CalibrationSettings());
+            sendCalibrationSettings(calibrationSettings);
         }
         if (calibrationSettingsSendingFails >= 3) {
             throw new Exception("Calibration settings procedure failed, max retransmission limit exceeded!");
         }
     }
 
-    private enum UploadControlSettingsStage{
+    private enum UploadControlSettingsStage {
         INIT,
         CONTROL_ACK,
         FINAL
     }
-    UploadControlSettingsStage uploadStage;
+
+    private UploadControlSettingsStage uploadStage;
     private int uploadFails;
 
     private void handleEventUploadControlSettings(CommEvent event) throws Exception{
@@ -419,25 +424,98 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
         calibrationSettings.getMessages().forEach(this::send);
     }
 
+    private float getRandN() {
+        return (float)(Math.random() - 0.5) * 2.0f;
+    }
+
+    private CalibrationSettings getStartCalibrationSettings() {
+        CalibrationSettings result = new CalibrationSettings();
+        result.setGyroOffset(new float[]{getRandN() * 400.0f, getRandN() * 400.f, getRandN() * 200.0f});
+        result.setFlagState(CalibrationSettings.FlagId.IS_GPS_CONNECTED, true);
+        result.setCrc();
+        return result;
+    }
+
+    private ControlSettings getStartControlSettings() {
+        ControlSettings result = new ControlSettings();
+
+        result.setCrc();
+        return result;
+    }
+
+    private RouteContainer getStartRouteContainer() {
+        RouteContainer result = new RouteContainer();
+
+        result.setCrc();
+        return result;
+    }
+
     private DebugData getStartDebugData() {
         DebugData result = new DebugData();
-        result.setRoll((float)Math.toRadians(23.0));
-        result.setPitch((float)Math.toRadians(13.0));
-        result.setYaw((float)Math.toRadians(53.0));
-        result.setLatitude(50.034f);
-        result.setLongitude(19.940f);
-        result.setRelativeAltitude(24.2f);
-        result.setVLoc(3.2f);
+        result.setRoll((float)Math.toRadians(getRandN() * 30.0f));
+        result.setPitch((float)Math.toRadians(getRandN()));
+        result.setYaw((float)Math.toRadians(getRandN() * 50.0f));
+        result.setLatitude(50.034f + getRandN() / 1000.0f);
+        result.setLongitude(19.940f + getRandN() / 1000.0f);
+        result.setRelativeAltitude(getRandN() * 30.0f);
+        result.setVLoc(getRandN() * 2.0f);
         result.setControllerState(DebugData.ControllerState.APPLICATION_LOOP);
+        result.setFLagState(DebugData.FlagId.GPS_FIX, true);
         result.setFLagState(DebugData.FlagId.GPS_FIX_3D, true);
         return result;
     }
 
+    private float time = (float)(Math.random() * 2);
+
     private void simulateSensors() {
         debugDataLock.lock();
-        // TODO simulate changing of debug data parameters
-        debugDataToSend.setLatitude(debugDataToSend.getLatitude() + (float)Math.random()/10000.0f - 0.00003f);
-        debugDataToSend.setLongitude(debugDataToSend.getLongitude() + (float)Math.random()/10000.0f + 0.00003f);
+
+        time += 1.0f / 25;
+
+        debugDataToSend.setRoll(debugDataToSend.getRoll()
+                + (float)Math.sin(0.53 * time) / 240.0f
+                + (float)Math.sin(1 * time) / 190.0f
+                + (float)Math.sin(5 * time) / 210.0f
+                + (float)Math.sin(2 * time + 1) / 310.0f);
+        debugDataToSend.setPitch(debugDataToSend.getPitch()
+                + (float)Math.sin(0.48 * time) / 330.0f
+                + (float)Math.sin(1.2 * time) / 220.0f
+                + (float)Math.sin(4 * time) / 320.0f
+                + (float)Math.sin(3 * time + 1) / 410.0f);
+        debugDataToSend.setYaw(debugDataToSend.getYaw()
+                + (float)Math.sin(0.24 * time) / 190.0f
+                + (float)Math.sin(0.6 * time + getRandN()) / 50.0f
+                + (float)Math.sin(5 * time + getRandN()) / 90.0f
+                + (float)Math.sin(3 * time + 1) / 150.0f);
+
+        debugDataToSend.setLatitude(debugDataToSend.getLatitude()
+                + (float)Math.sin(0.1 * time) /     250000.0f
+                + (float)Math.sin(0.23 * time) /    280000.0f
+                + (float)Math.sin(0.38 * time) /    300000.0f
+                + (float)Math.sin(2 * time) /       340000.0f
+                + (float)Math.sin(3 * time) /       370000.0f
+                + (float)Math.sin(1 * time) /       250000.0f
+                + getRandN() / 1000000.0f);
+        debugDataToSend.setLongitude(debugDataToSend.getLongitude()
+                + (float)Math.sin(0.22 * time) /    260000.0f
+                + (float)Math.sin(0.56 * time) /    300000.0f
+                + (float)Math.sin(0.8 * time) /     330000.0f
+                + (float)Math.sin(2.1 * time) /     350000.0f
+                + (float)Math.sin(3 * time) /       370000.0f
+                + (float)Math.sin(1.5 * time) /     260000.0f
+                + getRandN() / 1000000.0f);
+
+        debugDataToSend.setVLoc(debugDataToSend.getVLoc()
+                + (float)Math.sin(0.44 * time) / 120.0f
+                + (float)Math.sin(0.9 * time + getRandN()) / 20.0f
+                + (float)Math.sin(5 * time + getRandN()) / 60.0f
+                + (float)Math.sin(1 * time + 1) / 110.0f);
+        debugDataToSend.setRelativeAltitude(debugDataToSend.getRelativeAltitude()
+                + (float)Math.sin(0.74 * time) / 50.0f
+                + (float)Math.sin(0.8 * time + getRandN()) / 10.0f
+                + (float)Math.sin(5 * time + getRandN()) / 70.0f
+                + (float)Math.sin(2 * time + 1) / 110.0f);
+
         debugDataLock.unlock();
     }
 
@@ -468,18 +546,6 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
             DebugData debugData = getDebugDataToSend();
             System.out.println("Debug: " + debugData.toString());
             send(debugData.getMessage());
-        }
-
-        @Override
-        protected void onStarted() {
-            super.onStarted();
-
-        }
-
-        @Override
-        protected void onStopped() {
-            super.onStopped();
-
         }
     };
 }
