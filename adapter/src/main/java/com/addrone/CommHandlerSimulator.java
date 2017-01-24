@@ -10,8 +10,11 @@ import com.multicopter.java.events.MessageEvent;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import static java.lang.Math.sqrt;
 
 /**
  * Created by ebarnaw on 2017-01-03.
@@ -152,8 +155,8 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     connectionStage = ConnectionStage.FINAL_COMMAND;
                     System.out.println("Calibration procedure done successfully, waiting for final command");
                 } else if (event.matchSignalData(
-                        new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.BAD_CRC))) {
-                    System.out.println("Sending calibration failed, application reports BAD_CRC, retransmitting...");
+                        new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.DATA_INVALID))) {
+                    System.out.println("Sending calibration failed, application reports DATA_INVALID, retransmitting...");
                     calibrationSettingsSendingFails++;
                     sendCalibrationSettings(new CalibrationSettings());
                 } else if (event.matchSignalData(
@@ -303,8 +306,8 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     state = State.APP_LOOP;
                     debugTask.start();
                     runningTasks.add(debugTask);
-                } else if (event.matchSignalData(new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.BAD_CRC))) {
-                    System.out.println("Sending calibration failed, application reports BAD_CRC, retransmitting...");
+                } else if (event.matchSignalData(new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.DATA_INVALID))) {
+                    System.out.println("Sending calibration failed, application reports DATA_INVALID, retransmitting...");
                     calibrationSettingsSendingFails++;
                     sendCalibrationSettings(new CalibrationSettings());
                 } else if (event.matchSignalData(new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.TIMEOUT))) {
@@ -327,8 +330,8 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
             runningTasks.add(debugTask);
             state = State.APP_LOOP;
         } else if (event.matchSignalData(
-                new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.BAD_CRC))) {
-            System.out.println("Sending calibration failed, application reports BAD_CRC, retransmitting...");
+                new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.DATA_INVALID))) {
+            System.out.println("Sending calibration failed, application reports DATA_INVALID, retransmitting...");
             calibrationSettingsSendingFails++;
             sendCalibrationSettings(new CalibrationSettings());
         } else if (event.matchSignalData(
@@ -376,7 +379,7 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     uploadStage = UploadControlSettingsStage.FINAL;
                     System.out.println("Control settings procedure done successfully, waiting for final command");
                 } else if (event.matchSignalData(
-                        new SignalData(SignalData.Command.CONTROL_SETTINGS, SignalData.Parameter.BAD_CRC))) {
+                        new SignalData(SignalData.Command.CONTROL_SETTINGS, SignalData.Parameter.DATA_INVALID))) {
                     System.out.println("Sending Control settings failed, application reports BAD_CRC, retransmitting...");
                     uploadFails++;
                     controlSettings.getMessages().forEach(this::send);
