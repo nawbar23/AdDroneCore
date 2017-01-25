@@ -351,26 +351,20 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     private int uploadFails;
 
     private void handleEventUploadControlSettings(CommEvent event) throws Exception{
-
         ControlSettings controlSettings = new ControlSettings();
         controlSettings.setRollProp(15);
         controlSettings.setPitchProp(16);
         controlSettings.setYawProp(17);
-
-        //controlSettings.getMessages().forEach(this::send);
         System.out.println("Upload control settings stage @"+uploadStage.toString());
         switch (uploadStage) {
-
             case INIT:
                 System.out.println("Starting Control settings procedure...");
                 uploadFails = 0;
                 send(new SignalData(SignalData.Command.CONTROL_SETTINGS, SignalData.Parameter.READY).getMessage());
                 controlSettings.getMessages().forEach(this::send);
-
+                uploadStage = UploadControlSettingsStage.CONTROL_ACK;
                 break;
-
             case CONTROL_ACK:
-
                 if (event.matchSignalData(
                         new SignalData(SignalData.Command.CONTROL_SETTINGS, SignalData.Parameter.ACK))) {
                     uploadStage = UploadControlSettingsStage.FINAL;
@@ -390,7 +384,6 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     uploadStage = UploadControlSettingsStage.FINAL;
                     System.out.println("Control settings procedure failed, max retransmission limit exceeded!");
                 }
-
                 break;
             case FINAL:
                 debugTask.start();
