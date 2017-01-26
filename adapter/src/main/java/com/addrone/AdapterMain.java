@@ -1,5 +1,8 @@
 package com.addrone;
 
+import com.multicopter.java.simulator.CommHandlerSimulator;
+import com.multicopter.java.simulator.TcpServer;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -11,7 +14,7 @@ public class AdapterMain {
     public static void main(String[] args) {
         while (true) {
             ExecutorService executorService = Executors.newCachedThreadPool();
-            TcpServer tcpServer = new TcpServer(executorService);
+            TcpServer tcpServer = new TcpServer(executorService, true);
             CommHandlerSimulator commHandlerSimulator = new CommHandlerSimulator(tcpServer);
 
             tcpServer.setListener(commHandlerSimulator);
