@@ -35,8 +35,6 @@ public class DataStream implements Runnable {
         while(true) {
             try {
                 //parser.parse(byteArray);
-                input.read(byteArray);
-                output.write(byteArray);
                 int len = input.available();
                 if (len > 1024) len = 1024;
                 int read = input.read(byteArray, 0, len);
