@@ -1,11 +1,12 @@
 package com.addrone;
 
 import com.multicopter.java.simulator.CommHandlerSimulator;
-import com.multicopter.java.simulator.TcpPeer;
+import com.multicopter.java.simulator.TcpServer;
 
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by ebarnaw on 2016-12-13.
@@ -15,11 +16,6 @@ import java.util.concurrent.Executors;
 public class ServerMain {
 
     private ExecutorService executorService;
-    private Server server;
-
-    public void restartTcpPeer() {
-        startAdapter();
-    }
 
     private enum ServerMode {
         BRIDGE,ADAPTER
@@ -27,7 +23,6 @@ public class ServerMain {
 
     public ServerMain(ServerMode serverMode, ExecutorService executorService){
         this.executorService = executorService;
-        server = new Server(6666, executorService);
         if(serverMode == ServerMode.ADAPTER){
             startAdapter();
         }
@@ -38,21 +33,30 @@ public class ServerMain {
     }
 
     private void startAdapter() {
-            executorService.execute(server);
-            TcpPeer tcpPeer = new TcpPeer(executorService, this);
-            CommHandlerSimulator commHandlerSimulator = new CommHandlerSimulator(tcpPeer);
-            tcpPeer.setListener(commHandlerSimulator);
-            tcpPeer.connect("", 6666);
+            TcpServer tcpServer = new TcpServer(executorService);
+            CommHandlerSimulator commHandlerSimulator = new CommHandlerSimulator(tcpServer);
+            executorService.execute(new Server(7777, executorService));
+            executorService.execute(new Server(6666, executorService,true,7777));
+            tcpServer.setListener(commHandlerSimulator);
+            tcpServer.connect("", 6666);
+//            try {
+//                executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
+//            } catch (InterruptedException e) {
+//                System.out.println("Error while waiting for thread, exiting...");
+//                e.printStackTrace();
+//                break;
+//            }
         }
 
     private void startServer() {
-        executorService.execute(server);
+        executorService.execute(new Server(7777, executorService));
+        executorService.execute(new Server(6666, executorService,true,7777));
 }
 
     public static void main(String[] args) {
         ExecutorService executorService = Executors.newFixedThreadPool(15);
         ServerMain serverMain = new ServerMain(ServerMode.ADAPTER,executorService);
     }
-    //TODO Zmienic wszystko an jeden server socket.
+    //TODO obsluga bledow, parser, zastanowic sie na udp jak czas pozwoli
 
 }

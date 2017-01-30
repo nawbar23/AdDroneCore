@@ -3,7 +3,6 @@ package com.addrone;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.concurrent.ExecutorService;
 
 /**
  * Created by efrytom on 2017-01-13.
@@ -13,20 +12,11 @@ public class DataStream implements Runnable {
     private Server server;
     private DataInputStream input;
     private DataOutputStream output;
-    private Parser parser;
 
-
-//    public DataStream(DataInputStream input, DataOutputStream output, Server server) {
-//        this.input = input;
-//        this.output = output;
-//        this.server = server;
-//    }
-
-    public DataStream(DataInputStream input, DataOutputStream output, Server server, Parser parser) {
+    public DataStream(DataInputStream input, DataOutputStream output, Server server) {
         this.input = input;
         this.output = output;
         this.server = server;
-        this.parser = parser;
     }
 
     @Override
@@ -34,7 +24,6 @@ public class DataStream implements Runnable {
         byte[] byteArray = new byte[1024];
         while(true) {
             try {
-                //parser.parse(byteArray);
                 int len = input.available();
                 if (len > 1024) len = 1024;
                 int read = input.read(byteArray, 0, len);

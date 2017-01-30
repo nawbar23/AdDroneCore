@@ -15,16 +15,17 @@ public class Server implements Runnable {
 
     private final int port;
     private ExecutorService executorService;
+    private int serverPort;
 
     private ServerSocket server;
-    private Socket appSocket;
+    private Socket serverSocket;
     private Socket deviceSocket;
-    private Parser deviceParser;
-    private Parser appParser;
+
+    private boolean connectorInitiator;
 
 
-    private DataInputStream appInput;
-    private DataOutputStream appOutput;
+    private DataInputStream serverInput;
+    private DataOutputStream serverOutput;
     private DataInputStream deviceInput;
     private DataOutputStream deviceOutput;
 
@@ -33,25 +34,21 @@ public class Server implements Runnable {
         this.port = port;
     }
 
+    public Server(int port, ExecutorService executorService, boolean connectorInitiator, int serverPort) {
+        this.port = port;
+        this.executorService = executorService;
+        this.connectorInitiator = connectorInitiator;
+        this.serverPort = serverPort;
+    }
+
     @Override
     public void run() {
         startServerSocket();
+        connectWithServerSocket();
         connectWithDevice();
-        connectWithApp();
-        deviceParser = new Parser(executorService);
-        appParser = new Parser(executorService);
-        executorService.execute(new DataStream(appInput,deviceOutput,this, appParser));
-        executorService.execute(new DataStream(deviceInput, appOutput,this, deviceParser));
-    }
-
-    private void connectWithApp() {
-        try {
-            appSocket = server.accept();
-            appOutput = new DataOutputStream(appSocket.getOutputStream());
-            appInput = new DataInputStream(appSocket.getInputStream());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        System.out.println(executorService.toString());
+        executorService.execute(new DataStream(serverInput,deviceOutput,this));
+        executorService.execute(new DataStream(deviceInput,serverOutput,this));
 
     }
 
@@ -65,20 +62,33 @@ public class Server implements Runnable {
         }
     }
 
-
+    private void connectWithServerSocket() {
+        try {
+            if(serverSocket == null) {
+                if (connectorInitiator) {
+                    serverSocket = new Socket("localhost", serverPort);
+                    serverInput = new DataInputStream(serverSocket.getInputStream());
+                    serverOutput = new DataOutputStream(serverSocket.getOutputStream());
+                } else {
+                    serverSocket = server.accept();
+                    serverInput = new DataInputStream(serverSocket.getInputStream());
+                    serverOutput = new DataOutputStream(serverSocket.getOutputStream());
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     public void restoreConnection() {
         System.out.println("Odnawiam polaczenie");
         deviceSocket = null;
-        appSocket = null;
         run();
     }
 
     private void startServerSocket() {
         try {
-            if(server == null) {
-                server = new ServerSocket(port);
-            }
+            server = new ServerSocket(port);
         } catch (IOException e) {
             e.printStackTrace();
         }
