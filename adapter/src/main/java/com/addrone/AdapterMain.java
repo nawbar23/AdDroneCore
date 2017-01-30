@@ -1,7 +1,7 @@
 package com.addrone;
 
-import com.multicopter.java.simulator.CommHandlerSimulator;
-import com.multicopter.java.simulator.TcpServer;
+import com.simulator.CommHandlerSimulator;
+import com.clients.TcpServer;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

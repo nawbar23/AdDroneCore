@@ -1,12 +1,11 @@
 package com.addrone;
 
-import com.multicopter.java.simulator.CommHandlerSimulator;
-import com.multicopter.java.simulator.TcpServer;
+import com.simulator.CommHandlerSimulator;
+import com.clients.TcpServer;
 
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Created by ebarnaw on 2016-12-13.
