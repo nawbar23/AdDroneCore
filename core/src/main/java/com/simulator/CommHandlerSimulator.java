@@ -1,20 +1,13 @@
-package com.addrone;
+package com.simulator;
 
 import com.multicopter.java.*;
-import com.multicopter.java.actions.CommHandlerAction;
-import com.multicopter.java.actions.FlightLoopAction;
 import com.multicopter.java.data.*;
 import com.multicopter.java.events.CommEvent;
 import com.multicopter.java.events.MessageEvent;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
-import static java.lang.Math.sqrt;
 
 /**
  * Created by ebarnaw on 2017-01-03.
@@ -25,9 +18,12 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     private CommInterface commInterface;
     private CommDispatcher dispatcher;
 
+
     private State state;
-    private MagnetometerState magnetometerState;
     private FlightState flightState;
+    private MagnetometerState magnetometerState;
+    private UploadControlSettingsStage uploadStage;
+    private UploadRouteState uploadRouteState;
 
     private CalibrationSettings calibrationSettings = getStartCalibrationSettings();
     private ControlSettings controlSettings = getStartControlSettings();
@@ -37,6 +33,8 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     private Lock debugDataLock = new ReentrantLock();
 
     private int calibrationSettingsSendingFails;
+    private int uploadFails;
+    private int uploadRouteFails;
 
     private enum State {
         IDLE,
@@ -46,12 +44,25 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
         CALIBRATE_MAGNET,
         CALIBRATE_ACCEL,
         UPLOAD_CONTROL_SETTINGS,
-        DOWNLOAD_CONTROL_SETTINGS
+        DOWNLOAD_CONTROL_SETTINGS,
+        UPLOAD_ROUTE_CONTAINER,
+        DOWNLOAD_ROUTE_CONTAINER
     }
 
     private enum MagnetometerState{
         MAGNET_CALIBRATION_IDLE,
         MAGNET_CALIBRATION_RUNNING
+    }
+
+    private enum UploadControlSettingsStage{
+        INIT,
+        CONTROL_ACK,
+        FINAL
+    }
+
+    private enum UploadRouteState{
+        IDLE,
+        RUNNING
     }
 
     private enum FlightState{
@@ -93,6 +104,12 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                 case DOWNLOAD_CONTROL_SETTINGS:
                     handleEventDownloadControlSettings(event);
                     break;
+                case UPLOAD_ROUTE_CONTAINER:
+                    handleEventUploadRouteContainer(event);
+                    break;
+                case DOWNLOAD_ROUTE_CONTAINER:
+                    handleEventDownloadRouteContainer(event);
+                    break;
                 default:
                     System.out.println("Error state!");
             }
@@ -121,8 +138,8 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     }
 
     @Override
-    public void onDataReceived(byte[] data) {
-        dispatcher.proceedReceiving(data);
+    public void onDataReceived(final byte[] data, final int dataSize) {
+        dispatcher.proceedReceiving(data, dataSize);
     }
 
     public enum ConnectionStage {
@@ -178,6 +195,7 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     state = State.APP_LOOP;
                     // starting debug task
                     debugTask.start();
+
                     System.out.println("App loop started");
                 }
                 break;
@@ -227,7 +245,7 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     System.out.println("Uploading control settings");
                     state = State.UPLOAD_CONTROL_SETTINGS;
                     uploadStage = UploadControlSettingsStage.INIT;
-                    debugTask.stop();
+                    debugTask.stop();;
                     send(new SignalData(SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.ACK).getMessage());
 
                 } else if(event.matchSignalData(new SignalData(SignalData.Command.DOWNLOAD_SETTINGS, SignalData.Parameter.START))){
@@ -236,6 +254,18 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     debugTask.stop();
                     send(new SignalData(SignalData.Command.DOWNLOAD_SETTINGS, SignalData.Parameter.ACK).getMessage());
 
+                } else if(event.matchSignalData(new SignalData(SignalData.Command.UPLOAD_ROUTE, SignalData.Parameter.START))){
+                    state = State.UPLOAD_ROUTE_CONTAINER;
+                    uploadRouteState = UploadRouteState.IDLE;
+                    System.out.println("Starting Route Container upload procedure");
+                    debugTask.stop();
+                    send(new SignalData(SignalData.Command.UPLOAD_ROUTE, SignalData.Parameter.ACK).getMessage());
+
+                } else if(event.matchSignalData(new SignalData(SignalData.Command.DOWNLOAD_ROUTE, SignalData.Parameter.ACK))){
+                    state = State.DOWNLOAD_ROUTE_CONTAINER;
+                    System.out.println("Starting RoutevContainer download procedure");
+                    debugTask.stop();
+                    send(new SignalData(SignalData.Command.DOWNLOAD_ROUTE, SignalData.Parameter.ACK).getMessage());
                 }
             }
             // TODO here handle rest of messages that can start actions (flight loop, calibrations...)
@@ -340,22 +370,17 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
         }
     }
 
-    private enum UploadControlSettingsStage {
-        INIT,
-        CONTROL_ACK,
-        FINAL
-    }
-
-    private UploadControlSettingsStage uploadStage;
-    private int uploadFails;
-
     private void handleEventUploadControlSettings(CommEvent event) throws Exception{
+
         ControlSettings controlSettings = new ControlSettings();
         controlSettings.setRollProp(15);
         controlSettings.setPitchProp(16);
         controlSettings.setYawProp(17);
+
+        //controlSettings.getMessages().forEach(this::send);
         System.out.println("Upload control settings stage @"+uploadStage.toString());
         switch (uploadStage) {
+
             case INIT:
                 System.out.println("Starting Control settings procedure...");
                 uploadFails = 0;
@@ -363,6 +388,7 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                 controlSettings.getMessages().forEach(this::send);
                 uploadStage = UploadControlSettingsStage.CONTROL_ACK;
                 break;
+
             case CONTROL_ACK:
                 if (event.matchSignalData(
                         new SignalData(SignalData.Command.CONTROL_SETTINGS, SignalData.Parameter.ACK))) {
@@ -383,6 +409,7 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     uploadStage = UploadControlSettingsStage.FINAL;
                     System.out.println("Control settings procedure failed, max retransmission limit exceeded!");
                 }
+
                 break;
             case FINAL:
                 debugTask.start();
@@ -405,6 +432,50 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
         }
         debugTask.start();
         state = State.APP_LOOP;
+
+    }
+
+    private void handleEventUploadRouteContainer(CommEvent event) throws Exception {
+        double lat = 50.035885;
+        double lon = 19.946766;
+        float vel = 0;
+        float absAlt = 0;
+        float relAlt = 0;
+
+        RouteContainer.Waypoint waypoint = new RouteContainer().new Waypoint(lat, lon, absAlt, relAlt, vel);
+        RouteContainer routeContainer = new RouteContainer();
+        routeContainer.addWaypoint(waypoint);
+
+        switch(uploadRouteState){
+            case IDLE:
+                uploadRouteState = UploadRouteState.RUNNING;
+                uploadRouteFails = 0;
+                routeContainer.getMessages().forEach(this::send);
+                break;
+            case RUNNING:
+                if (event.matchSignalData(
+                        new SignalData(SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.ACK))) {
+                    state = State.APP_LOOP;
+                    System.out.println("Route Container upload procedure done successfully");
+                } else if (event.matchSignalData(
+                        new SignalData(SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.DATA_INVALID))) {
+                    System.out.println("Uploading Route Container procedure failed, application reports BAD_CRC, retransmitting...");
+                    uploadRouteFails++;
+                    routeContainer.getMessages().forEach(this::send);
+                } else if (event.matchSignalData(
+                        new SignalData(SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.TIMEOUT))) {
+                    System.out.println("Uploading Route Container procedure failed, application reports TIMEOUT, retransmitting...");
+                    uploadRouteFails++;
+                    routeContainer.getMessages().forEach(this::send);
+                }
+                if (uploadRouteFails >= 3) {
+                    throw new Exception("Uploading Route Container procedure failed, max retransmission limit exceeded!");
+                }
+                break;
+        }
+    }
+
+    private void handleEventDownloadRouteContainer(CommEvent event) {
 
     }
 
@@ -461,7 +532,6 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
 
     private void simulateSensors() {
         debugDataLock.lock();
-
         time += 1.0f / 25;
 
         debugDataToSend.setRoll(debugDataToSend.getRoll()
@@ -507,7 +577,6 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                 + (float)Math.sin(0.8 * time + getRandN()) / 10.0f
                 + (float)Math.sin(5 * time + getRandN()) / 70.0f
                 + (float)Math.sin(2 * time + 1) / 110.0f);
-
         debugDataLock.unlock();
     }
 

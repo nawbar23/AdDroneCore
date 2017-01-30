@@ -1,6 +1,5 @@
-package com.addrone;
+package com.clients;
 
-import com.multicopter.java.CommDispatcher;
 import com.multicopter.java.CommInterface;
 import com.multicopter.java.CommMessage;
 
@@ -27,11 +26,20 @@ public class TcpServer extends CommInterface implements Runnable  {
 
     private State state;
 
+    private boolean adapterMode;
+
     public TcpServer(ExecutorService executorService) {
         super();
         this.executorService = executorService;
         this.state = State.DISCONNECTED;
     }
+
+    public TcpServer(ExecutorService executorService, boolean adapterMode){
+        this.executorService = executorService;
+        this.state = State.DISCONNECTED;
+        this.adapterMode = adapterMode;
+    }
+
 
     private enum State {
         CONNECTING,
@@ -70,10 +78,14 @@ public class TcpServer extends CommInterface implements Runnable  {
     public void run() {
         DataInputStream inputStream = null;
         try {
-            serverSocket = new ServerSocket(port);
-
-            System.out.println("Server started, waiting for connection");
-            socket = serverSocket.accept();
+            if(adapterMode) {
+                serverSocket = new ServerSocket(port);
+                System.out.println("Server started, waiting for connection");
+                socket = serverSocket.accept();
+            }
+            else{
+                socket = new Socket("localhost", 6666);
+            }
 
             outputStream = new DataOutputStream(socket.getOutputStream());
             inputStream = new DataInputStream(socket.getInputStream());
@@ -82,13 +94,16 @@ public class TcpServer extends CommInterface implements Runnable  {
             state = State.CONNECTED;
             listener.onConnected();
 
+            byte buffer[] = new byte[1024];
             while(state != State.DISCONNECTING) {
-                byte buffer[] = new byte[1024];
-                int dataSize = inputStream.read(buffer, 0, buffer.length);
-                if (dataSize != -1) {
-                    byte[] tempArray = new byte[dataSize];
-                    System.arraycopy(buffer, 0, tempArray, 0, dataSize);
-                    listener.onDataReceived(tempArray);
+                int len = inputStream.available();
+                if (len > 1024) len = 1024;
+                int dataSize = inputStream.read(buffer, 0, len);
+                listener.onDataReceived(buffer, dataSize);
+                try {
+                    Thread.sleep(1);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             }
         }
