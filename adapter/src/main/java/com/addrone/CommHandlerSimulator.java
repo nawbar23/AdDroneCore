@@ -269,7 +269,6 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                             System.out.println(controlData.toString());
                             if (controlData.getCommand() == ControlData.ControllerCommand.STOP) {
                                 send(new SignalData(SignalData.Command.FLIGHT_LOOP, SignalData.Parameter.BREAK_ACK).getMessage());
-                                System.out.println("I want make you happy");
                                 state = State.APP_LOOP;
                                 flightState = FlightState.WAITING_FOR_RUNNING;
                             }
