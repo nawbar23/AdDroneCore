@@ -36,7 +36,8 @@ public class UartComm extends CommInterface implements CommInterface.CommInterfa
                 @Override
                 public void serialEvent(SerialPortEvent serialPortEvent) {
                     try {
-                        onDataReceived(serialPort.readBytes());
+                        byte[] data = serialPort.readBytes();
+                        onDataReceived(data, data.length);
                     }
                     catch (SerialPortException e)
                     {
@@ -89,11 +90,11 @@ public class UartComm extends CommInterface implements CommInterface.CommInterfa
     }
 
     @Override
-    public void onDataReceived(byte[] data) {
+    public void onDataReceived(final byte[] data, final int dataSize) {
         try
         {
             System.out.println(CommMessage.byteArrayToHexString(data));
-            commDispatcher.proceedReceiving(data);
+            commDispatcher.proceedReceiving(data, dataSize);
         }
         catch(Exception e)
         {
