@@ -32,23 +32,10 @@ public class UartComm extends CommInterface implements CommInterface.CommInterfa
             serialPort.openPort();
             serialPort.setParams(115200,8,1,0);
             serialPort.setFlowControlMode(SerialPort.FLOWCONTROL_RTSCTS_IN | SerialPort.FLOWCONTROL_RTSCTS_OUT);
-            serialPort.addEventListener(new SerialPortEventListener() {
-                @Override
-                public void serialEvent(SerialPortEvent serialPortEvent) {
-                    try {
-                        onDataReceived(serialPort.readBytes());
-                    }
-                    catch (SerialPortException e)
-                    {
-                        System.out.println("Read problem");
-                    }
-                }
-            });
-
         }
         catch (SerialPortException e)
         {
-            System.out.print("Cannot open port " + serialPort.getPortName() +"\n");
+            System.out.print("Cannot open port: " + serialPort.getPortName() + "- try again or change open parameters\n");
         }
     }
 
@@ -60,7 +47,7 @@ public class UartComm extends CommInterface implements CommInterface.CommInterfa
         }
         catch(SerialPortException e)
         {
-            System.out.println("Cannot close port" + serialPort.getPortName());
+            System.out.println("Cannot close port: " + serialPort.getPortName() + "\n");
         }
     }
 
@@ -72,7 +59,7 @@ public class UartComm extends CommInterface implements CommInterface.CommInterfa
         }
         catch (SerialPortException e)
         {
-            System.out.println("Send error");
+            System.out.println("Send error - verify your data\n");
         }
     }
 
@@ -89,15 +76,15 @@ public class UartComm extends CommInterface implements CommInterface.CommInterfa
     }
 
     @Override
-    public void onDataReceived(byte[] data) {
+    public void onDataReceived(byte[] data, final int dataSize) {
         try
         {
             System.out.println(CommMessage.byteArrayToHexString(data));
-            commDispatcher.proceedReceiving(data);
+            commDispatcher.proceedReceiving(data,dataSize);
         }
         catch(Exception e)
         {
-            System.out.println("Receive problem");
+            System.out.println("Read problem, cannot receive data from device - message from receive method\n");
         }
     }
 
@@ -106,9 +93,43 @@ public class UartComm extends CommInterface implements CommInterface.CommInterfa
         send(message.getByteArray());
     }
 
+    private void receiveFromBoard()
+    {
+        try {
+            serialPort.addEventListener(new SerialPortEventListener() {
+                @Override
+                public void serialEvent(SerialPortEvent serialPortEvent) {
+                    try {
+                        byte[] byteTemp = serialPort.readBytes();
+                        onDataReceived(byteTemp, byteTemp.length);
+                    } catch (SerialPortException e) {
+                        System.out.println("Read problem, cannot receive data from device - message from serialListener\n");
+                    }
+                }
+            });
+        }
+        catch (SerialPortException e)
+        {
+            System.out.println("Event error\n");
+        }
+    }
+
     public static void main(String[] args) {
+
         UartComm uartComm = new UartComm();
+
         uartComm.connect("",5);
         uartComm.sendToBoard(new SignalData(SignalData.Command.START_CMD, SignalData.Parameter.START).getMessage());
+        uartComm.receiveFromBoard();
+        try {
+            if (uartComm.serialPort.getInputBufferBytesCount()==0) {
+                uartComm.disconnect();
+                System.out.println("Port closed");
+            }
+        }
+        catch (SerialPortException e)
+        {
+            System.out.println("Close port error");
+        }
     }
 }
