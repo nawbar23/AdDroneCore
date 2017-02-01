@@ -18,7 +18,6 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     private CommInterface commInterface;
     private CommDispatcher dispatcher;
 
-
     private State state;
     private FlightState flightState;
     private MagnetometerState magnetometerState;
@@ -75,7 +74,6 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
         this.dispatcher = new CommDispatcher(this);
 
         this.state = State.IDLE;
-        this.flightState = FlightState.WAITING_FOR_RUNNING;
     }
 
     @Override
@@ -154,8 +152,7 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
         System.out.println("Connecting app loop @ " + connectionStage.toString());
         switch (connectionStage) {
             case INITIAL_COMMAND:
-                if (event.matchSignalData(
-                        new SignalData(SignalData.Command.START_CMD, SignalData.Parameter.START))) {
+                if (event.matchSignalData(new SignalData(SignalData.Command.START_CMD, SignalData.Parameter.START))) {
                     System.out.println("Start command received, staring calibration procedure");
                     send(new SignalData(SignalData.Command.START_CMD, SignalData.Parameter.ACK).getMessage());
                     // simulate calibration process (sleep 0.5s)
@@ -168,17 +165,14 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                 break;
 
             case CALIBRATION_ACK:
-                if (event.matchSignalData(
-                        new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.ACK))) {
+                if (event.matchSignalData(new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.ACK))) {
                     connectionStage = ConnectionStage.FINAL_COMMAND;
                     System.out.println("Calibration procedure done successfully, waiting for final command");
-                } else if (event.matchSignalData(
-                        new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.DATA_INVALID))) {
+                } else if (event.matchSignalData(new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.DATA_INVALID))) {
                     System.out.println("Sending calibration failed, application reports DATA_INVALID, retransmitting...");
                     calibrationSettingsSendingFails++;
                     sendCalibrationSettings(calibrationSettings);
-                } else if (event.matchSignalData(
-                        new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.TIMEOUT))) {
+                } else if (event.matchSignalData(new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.TIMEOUT))) {
                     System.out.println("Sending calibration failed, application reports TIMEOUT, retransmitting...");
                     calibrationSettingsSendingFails++;
                     sendCalibrationSettings(calibrationSettings);
@@ -189,8 +183,7 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                 break;
 
             case FINAL_COMMAND:
-                if (event.matchSignalData(
-                        new SignalData(SignalData.Command.APP_LOOP, SignalData.Parameter.START))) {
+                if (event.matchSignalData(new SignalData(SignalData.Command.APP_LOOP, SignalData.Parameter.START))) {
                     send(new SignalData(SignalData.Command.APP_LOOP, SignalData.Parameter.ACK).getMessage());
                     state = State.APP_LOOP;
                     // starting debug task
@@ -231,39 +224,41 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     debugTask.stop();
                     state = State.CALIBRATE_ACCEL;
                     send(new SignalData(SignalData.Command.CALIBRATE_ACCEL, SignalData.Parameter.ACK).getMessage());
+                    // simulate calibration process (sleep 0.5s)
                     Thread.sleep(500);
                     send(new SignalData(SignalData.Command.CALIBRATE_ACCEL, SignalData.Parameter.DONE).getMessage());
                     sendCalibrationSettings(calibrationSettings);
 
                 } else if(event.matchSignalData(new SignalData(SignalData.Command.FLIGHT_LOOP, SignalData.Parameter.START))) {
-                    System.out.println("Flight loop started");
+                    System.out.println("FlightLoop initiated");
                     debugTask.stop();
                     send(new SignalData(SignalData.Command.FLIGHT_LOOP, SignalData.Parameter.ACK).getMessage());
                     state = State.FLIGHT_LOOP;
+                    flightState = FlightState.WAITING_FOR_RUNNING;
 
                 } else if(event.matchSignalData(new SignalData(SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.START))){
-                    System.out.println("Uploading control settings");
+                    System.out.println("Uploading ControlSettings");
                     state = State.UPLOAD_CONTROL_SETTINGS;
                     uploadStage = UploadControlSettingsStage.INIT;
                     debugTask.stop();;
                     send(new SignalData(SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.ACK).getMessage());
 
                 } else if(event.matchSignalData(new SignalData(SignalData.Command.DOWNLOAD_SETTINGS, SignalData.Parameter.START))){
+                    System.out.println("Downloading ControlSettings");
                     state = State.DOWNLOAD_CONTROL_SETTINGS;
-                    System.out.println("Downloading control settings");
                     debugTask.stop();
                     send(new SignalData(SignalData.Command.DOWNLOAD_SETTINGS, SignalData.Parameter.ACK).getMessage());
 
                 } else if(event.matchSignalData(new SignalData(SignalData.Command.UPLOAD_ROUTE, SignalData.Parameter.START))){
+                    System.out.println("Starting RouteContainer upload procedure");
                     state = State.UPLOAD_ROUTE_CONTAINER;
                     uploadRouteState = UploadRouteState.IDLE;
-                    System.out.println("Starting Route Container upload procedure");
                     debugTask.stop();
                     send(new SignalData(SignalData.Command.UPLOAD_ROUTE, SignalData.Parameter.ACK).getMessage());
 
                 } else if(event.matchSignalData(new SignalData(SignalData.Command.DOWNLOAD_ROUTE, SignalData.Parameter.ACK))){
+                    System.out.println("Starting RouteContainer download procedure");
                     state = State.DOWNLOAD_ROUTE_CONTAINER;
-                    System.out.println("Starting RoutevContainer download procedure");
                     debugTask.stop();
                     send(new SignalData(SignalData.Command.DOWNLOAD_ROUTE, SignalData.Parameter.ACK).getMessage());
                 }
@@ -271,7 +266,6 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
             // TODO here handle rest of messages that can start actions (flight loop, calibrations...)
             // TODO for example any action starts with SignalData with command - action name and parameter START
             // TODO event.matchSignalData(new SignalData(SignalData.Command.???ACTION???, SignalData.Parameter.START)
-            // TODO example of handling FLIGHT_LOOP start above
         }
     }
 
@@ -279,28 +273,29 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
         switch (flightState) {
             case WAITING_FOR_RUNNING:
                 if (event.matchSignalData(new SignalData(SignalData.Command.FLIGHT_LOOP, SignalData.Parameter.READY))) {
+                    System.out.println("FlightLoop initialization done");
                     debugTask.start();
                     flightState = FlightState.RUNNING;
-                    System.out.println("Flight loop ready");
                 }
                 break;
+
             case RUNNING:
                 if (event.getType() == CommEvent.EventType.MESSAGE_RECEIVED) {
                     CommMessage message = ((MessageEvent) event).getMessage();
                     switch (message.getType()) {
                         case AUTOPILOT:
-                            System.out.println("Autopilot mode on");
-                            // Autopilot
+                            System.out.println("AutopilotData received");
+                            // TODO handle this feature
                             break;
+
                         case CONTROL:
-                            System.out.println("Control data received");
+                            System.out.println("ControlData received");
                             ControlData controlData = new ControlData(message);
                             updateDebugData(controlData);
                             System.out.println(controlData.toString());
                             if (controlData.getCommand() == ControlData.ControllerCommand.STOP) {
                                 send(new SignalData(SignalData.Command.FLIGHT_LOOP, SignalData.Parameter.BREAK_ACK).getMessage());
                                 state = State.APP_LOOP;
-                                flightState = FlightState.WAITING_FOR_RUNNING;
                             }
                     }
                 }
@@ -312,11 +307,14 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
         switch (magnetometerState) {
             case MAGNET_CALIBRATION_IDLE:
                 if(event.matchSignalData(new SignalData(SignalData.Command.CALIBRATE_MAGNET, SignalData.Parameter.SKIP))){
-                    System.out.println("User breaks calibration");
+                    System.out.println("User skips magnetometer calibration");
                     state = State.APP_LOOP;
                     send(new SignalData(SignalData.Command.CALIBRATE_MAGNET, SignalData.Parameter.ACK).getMessage());
                     debugTask.start();
                 } else if(event.matchSignalData(new SignalData(SignalData.Command.CALIBRATE_MAGNET, SignalData.Parameter.DONE))){
+                    System.out.println("Magnetometer calibration done");
+                    // simulate calibration computation (sleep 0.5s)
+                    Thread.sleep(100);
                     send(new SignalData(SignalData.Command.CALIBRATE_MAGNET, SignalData.Parameter.DONE).getMessage());
                     sendCalibrationSettings(calibrationSettings);
                     magnetometerState = MagnetometerState.MAGNET_CALIBRATION_RUNNING;
@@ -327,9 +325,9 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     debugTask.start();
                 }
                 break;
+
             case MAGNET_CALIBRATION_RUNNING:
                 if (event.matchSignalData(new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.ACK))) {
-                    System.out.println("Calibration procedure done successfully.");
                     state = State.APP_LOOP;
                     debugTask.start();
                 } else if (event.matchSignalData(new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.DATA_INVALID))) {
@@ -349,18 +347,15 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     }
 
     private void handleEventCalibrationAccelerometer(CommEvent event) throws Exception {
-        if (event.matchSignalData(
-                new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.ACK))) {
+        if (event.matchSignalData(new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.ACK))) {
             System.out.println("Calibration procedure done successfully.");
             debugTask.start();
             state = State.APP_LOOP;
-        } else if (event.matchSignalData(
-                new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.DATA_INVALID))) {
+        } else if (event.matchSignalData(new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.DATA_INVALID))) {
             System.out.println("Sending calibration failed, application reports DATA_INVALID, retransmitting...");
             calibrationSettingsSendingFails++;
             sendCalibrationSettings(calibrationSettings);
-        } else if (event.matchSignalData(
-                new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.TIMEOUT))) {
+        } else if (event.matchSignalData(new SignalData(SignalData.Command.CALIBRATION_SETTINGS, SignalData.Parameter.TIMEOUT))) {
             System.out.println("Sending calibration failed, application reports TIMEOUT, retransmitting...");
             calibrationSettingsSendingFails++;
             sendCalibrationSettings(calibrationSettings);
@@ -372,6 +367,13 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
 
     private void handleEventUploadControlSettings(CommEvent event) throws Exception{
 
+        // TODO At "Upload" action, we as "Simulator" do not send settings, we are receiving them (upload and download are from user perspective).
+        // TODO Also even when we are in "Download" we do not have to create 'new ControlSettings' object,
+        // TODO we have to send actually contained object in filed: 'controlSettings'.
+        // TODO This object should be created be default at Simulator creation
+        // TODO and updated at "Upload" action by the data from application.
+        // TODO Same shit at RouteContainer upload and download :)
+        // TODO So the lines at the bottom are not needed :) <krew w piach>
         ControlSettings controlSettings = new ControlSettings();
         controlSettings.setRollProp(15);
         controlSettings.setPitchProp(16);
