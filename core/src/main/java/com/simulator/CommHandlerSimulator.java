@@ -269,17 +269,28 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                 if (event.getType() == CommEvent.EventType.MESSAGE_RECEIVED) {
                     CommMessage message = ((MessageEvent) event).getMessage();
                     switch (message.getType()) {
+                        case SIGNAL:
+                            SignalData signalData = new SignalData(message);
+                            if (signalData.getCommand() == SignalData.Command.PING_VALUE) {
+                                System.out.println("Ping message received, responding with pong");
+                                send(new SignalData(SignalData.Command.PING_VALUE, signalData.getParameterValue()).getMessage());
+                            }
+                            break;
+
                         case AUTOPILOT:
                             System.out.println("AutopilotData received");
-                            // TODO handle this feature
+                            AutopilotData autopilotData = new AutopilotData(message);
+                            System.out.println(autopilotData.toString());
+                            send(autopilotData.getMessage());
                             break;
 
                         case CONTROL:
                             System.out.println("ControlData received");
                             ControlData controlData = new ControlData(message);
-                            updateDebugData(controlData);
                             System.out.println(controlData.toString());
+                            updateDebugData(controlData);
                             if (controlData.getCommand() == ControlData.ControllerCommand.STOP) {
+                                System.out.println("Stop command received, leaving flight loop");
                                 send(new SignalData(SignalData.Command.FLIGHT_LOOP, SignalData.Parameter.BREAK_ACK).getMessage());
                                 state = State.APP_LOOP;
                             }
