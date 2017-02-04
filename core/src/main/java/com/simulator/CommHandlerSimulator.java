@@ -4,6 +4,7 @@ import com.multicopter.java.*;
 import com.multicopter.java.data.*;
 import com.multicopter.java.events.CommEvent;
 import com.multicopter.java.events.MessageEvent;
+import jdk.nashorn.internal.runtime.ECMAException;
 
 import java.io.IOException;
 import java.util.concurrent.locks.Lock;
@@ -209,10 +210,11 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     send(new SignalData(SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.ACK).getMessage());
 
                 } else if(event.matchSignalData(new SignalData(SignalData.Command.DOWNLOAD_SETTINGS, SignalData.Parameter.START))){
-                    System.out.println("Downloading ControlSettings");
+                    System.out.println("ControlSettings download, sending to client");
                     state = State.DOWNLOAD_CONTROL_SETTINGS;
                     debugTask.stop();
                     send(new SignalData(SignalData.Command.DOWNLOAD_SETTINGS, SignalData.Parameter.ACK).getMessage());
+                    startSignalPayloadSending(controlSettings);
 
                 } else if(event.matchSignalData(new SignalData(SignalData.Command.UPLOAD_ROUTE, SignalData.Parameter.START))){
                     System.out.println("Starting RouteContainer upload procedure");
@@ -221,11 +223,12 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     debugTask.stop();
                     send(new SignalData(SignalData.Command.UPLOAD_ROUTE, SignalData.Parameter.ACK).getMessage());
 
-                } else if(event.matchSignalData(new SignalData(SignalData.Command.DOWNLOAD_ROUTE, SignalData.Parameter.ACK))){
-                    System.out.println("Starting RouteContainer download procedure");
+                } else if(event.matchSignalData(new SignalData(SignalData.Command.DOWNLOAD_ROUTE, SignalData.Parameter.START))){
+                    System.out.println("RouteContainer download, sending to client");
                     state = State.DOWNLOAD_ROUTE_CONTAINER;
                     debugTask.stop();
                     send(new SignalData(SignalData.Command.DOWNLOAD_ROUTE, SignalData.Parameter.ACK).getMessage());
+                    startSignalPayloadSending(routeContainer);
                 }
             }
             // TODO here handle rest of messages that can start actions (flight loop, calibrations...)
@@ -383,20 +386,13 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     }
 
 
-    private void handleEventDownloadControlSettings(CommEvent event) {
-        //TODO #Doing #jeszczeNieZrobione
-
-        if (true){ //if correct data found in internal memmory
-            send(new SignalData(SignalData.Command.DOWNLOAD_SETTINGS, SignalData.Parameter.ACK).getMessage());
-            //pobrać z internala i wyslac
-            System.out.println("Uploading Control Settings...");
+    private void handleEventDownloadControlSettings(CommEvent event) throws Exception {
+        // Download is from user perspective, here data is send to application
+        if (handleSignalPayloadAck(controlSettings, event)) {
+            System.out.println("Control settings download procedure done successfully.");
+            debugTask.start();
+            state = State.APP_LOOP;
         }
-        else {
-            send(new SignalData(SignalData.Command.DOWNLOAD_SETTINGS, SignalData.Parameter.FAIL).getMessage());
-        }
-        debugTask.start();
-        state = State.APP_LOOP;
-
     }
 
     private void handleEventUploadRouteContainer(CommEvent event) throws Exception {
@@ -439,8 +435,13 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
         }
     }
 
-    private void handleEventDownloadRouteContainer(CommEvent event) {
-
+    private void handleEventDownloadRouteContainer(CommEvent event) throws Exception {
+        // Download is from user perspective, here data is send to application
+        if (handleSignalPayloadAck(routeContainer, event)) {
+            System.out.println("Route container download procedure done successfully.");
+            debugTask.start();
+            state = State.APP_LOOP;
+        }
     }
 
     private void send (final CommMessage message) {
