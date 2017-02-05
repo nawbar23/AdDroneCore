@@ -611,6 +611,7 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     @Override
     public void onDisconnected() {
         System.out.println("CommHandlerSimulator : onDisconnected");
+        debugTask.stop();
     }
 
     @Override
