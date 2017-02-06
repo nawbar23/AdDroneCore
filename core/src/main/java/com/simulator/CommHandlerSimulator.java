@@ -475,12 +475,12 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
         } else if (event.matchSignalData(new SignalData(data.getDataCommand(), SignalData.Parameter.DATA_INVALID))) {
             System.out.println("Sending " + data.getDataCommand().toString() + ", client reports DATA_INVALID, retransmitting...");
             sendingProcedureFails++;
-            send(calibrationSettings);
+            send(data);
 
         } else if (event.matchSignalData(new SignalData(data.getDataCommand(), SignalData.Parameter.TIMEOUT))) {
             System.out.println("Sending " + data.getDataCommand().toString() + ", client reports TIMEOUT, retransmitting...");
             sendingProcedureFails++;
-            send(calibrationSettings);
+            send(data);
 
         } else {
             throw new Exception("Unexpected message received at " + data.getDataCommand().toString() + " sending procedure!");
