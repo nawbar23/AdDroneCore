@@ -13,7 +13,7 @@ subprojects {
     }
 
     dependencies {
-        compile group: 'org.scream3r', name: 'jssc', version: '2.8.0'
+
     }
 }
 
@@ -65,7 +65,7 @@ project (':adapter') {
     }
 
     dependencies {
-
+        compile group: 'org.scream3r', name: 'jssc', version: '2.8.0'
     }
 
     sourceSets.main.java.srcDirs project(':core').sourceSets.main.java
