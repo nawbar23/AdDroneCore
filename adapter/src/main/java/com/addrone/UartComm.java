@@ -1,16 +1,11 @@
 package com.addrone;
 
 import com.multicopter.java.*;
-import com.multicopter.java.data.CalibrationSettings;
-import com.multicopter.java.data.SignalData;
-import com.multicopter.java.events.CommEvent;
 import jssc.*;
 import java.io.IOException;
-import java.io.InterruptedIOException;
 
-public class UartComm extends CommInterface {
+public class UartComm extends CommInterface implements SerialPortEventListener {
 
-    protected UavManager uavManager;
     protected UavEvent event;
     protected SerialPort serialPort;
 
@@ -21,6 +16,7 @@ public class UartComm extends CommInterface {
             serialPort.openPort();
             serialPort.setParams(115200, 8, 1, 0);
             serialPort.setFlowControlMode(SerialPort.FLOWCONTROL_RTSCTS_IN | SerialPort.FLOWCONTROL_RTSCTS_OUT);
+            serialPort.addEventListener(this);
             listener.onConnected();
             event = new UavEvent(UavEvent.Type.CONNECTED);
         } catch (SerialPortException e) {
@@ -33,9 +29,9 @@ public class UartComm extends CommInterface {
     @Override
     public void disconnect() {
         try {
-            serialPort.closePort();
             listener.onDisconnected();
             event = new UavEvent(UavEvent.Type.DISCONNECTED);
+            serialPort.closePort();
         } catch (SerialPortException e) {
             System.out.println("Cannot close port: " + serialPort.getPortName() + "\n");
             listener.onError(new IOException(e.getMessage(), e.getCause()));
@@ -45,9 +41,22 @@ public class UartComm extends CommInterface {
 
     @Override
     public void send(byte[] data) {
-        System.out.println(CommMessage.byteArrayToHexString(data));
+        System.out.println("UartComm: " + CommMessage.byteArrayToHexString(data));
         try {
             serialPort.writeBytes(data);
+        } catch (SerialPortException e) {
+            System.out.println("Send error - verify your data\n");
+            listener.onError(new IOException(e.getMessage(), e.getCause()));
+        }
+    }
+
+    @Override
+    public void serialEvent(SerialPortEvent serialPortEvent) {
+        try {
+            if (0 < serialPort.getInputBufferBytesCount()) {
+                byte[] data = serialPort.readBytes();
+                listener.onDataReceived(data, data.length);
+            }
         } catch (SerialPortException e) {
             System.out.println("Send error - verify your data\n");
             listener.onError(new IOException(e.getMessage(), e.getCause()));

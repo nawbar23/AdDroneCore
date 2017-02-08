@@ -54,7 +54,7 @@ public class ServerMain {
 
     public static void main(String[] args) {
         ExecutorService executorService = Executors.newFixedThreadPool(15);
-        ServerMain serverMain = new ServerMain(ServerMode.ADAPTER,executorService);
+        ServerMain serverMain = new ServerMain(ServerMode.BRIDGE,executorService);
     }
     //TODO obsluga bledow, parser, zastanowic sie na udp jak czas pozwoli
 
