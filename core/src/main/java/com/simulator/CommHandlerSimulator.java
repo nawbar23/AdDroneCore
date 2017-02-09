@@ -358,14 +358,14 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                 System.out.println("Starting Upload Control settings procedure...");
                 uploadFails = 0;
 
-                if (event.getType() == CommEvent.EventType.MESSAGE_RECEIVED){
+                //if (event.getType() == CommEvent.EventType.MESSAGE_RECEIVED){
                     uploadStage = UploadControlSettingsStage.UPLOAD_PROCEDURE;
                     System.out.println("Starting Upload Control settings procedure...");
-                }
+                //}
                 break;
             case UPLOAD_PROCEDURE:
                 if (event.getType() == CommEvent.EventType.SIGNAL_PAYLOAD_RECEIVED
-                        && ((SignalPayloadEvent)event).getDataType() == SignalData.Command.CONTROL_SETTINGS_DATA) {
+                        && ((SignalPayloadEvent)event).getDataType() == SignalData.Command.CONTROL_SETTINGS) {
 
                     SignalPayloadEvent signalEvent = (SignalPayloadEvent)event;
                     ControlSettings controlSettings  = (ControlSettings) signalEvent.getData();
