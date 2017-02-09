@@ -30,6 +30,7 @@ public class ServerMain {
             startAdapter();
         }
         else if(serverMode == ServerMode.BRIDGE){
+            executorService = Executors.newCachedThreadPool();
             startServer();
         }
 

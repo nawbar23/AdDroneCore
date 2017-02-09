@@ -35,6 +35,7 @@ public class TcpPeer extends CommInterface implements Runnable  {
 
     private boolean adapterMode;
 
+
     public TcpPeer(ExecutorService executorService) {
         super();
         this.executorService = executorService;
@@ -85,12 +86,11 @@ public class TcpPeer extends CommInterface implements Runnable  {
     public void run() {
         DataInputStream inputStream = null;
         try {
-            if(adapterMode) {
+            if (adapterMode) {
                 serverSocket = new ServerSocket(port);
                 System.out.println("Server started, waiting for connection");
                 socket = serverSocket.accept();
-            }
-            else{
+            } else {
                 socket = new Socket("localhost", 6666);
             }
 
@@ -102,7 +102,7 @@ public class TcpPeer extends CommInterface implements Runnable  {
             listener.onConnected();
 
             byte buffer[] = new byte[1024];
-            while(state != State.DISCONNECTING) {
+            while (state != State.DISCONNECTING) {
                 int len = inputStream.available();
                 if (len > 1024) len = 1024;
                 int dataSize = inputStream.read(buffer, 0, len);
@@ -112,10 +112,10 @@ public class TcpPeer extends CommInterface implements Runnable  {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+
             }
         }
-        catch (IOException e)
-        {
+        catch(IOException e){
             e.printStackTrace();
             listener.onError(e);
         }
