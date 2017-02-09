@@ -4,6 +4,7 @@ import com.multicopter.java.*;
 import com.multicopter.java.data.*;
 import com.multicopter.java.events.CommEvent;
 import com.multicopter.java.events.MessageEvent;
+import jdk.nashorn.internal.runtime.ECMAException;
 import com.multicopter.java.events.SignalPayloadEvent;
 
 import java.io.IOException;
@@ -172,7 +173,6 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
 
                 } else if (event.matchSignalData(new SignalData(SignalData.Command.APP_LOOP, SignalData.Parameter.BREAK))) {
                     System.out.println("Disconnect message received, leaving app loop and disconnecting");
-                    // stop all running tasks
                     debugTask.stop();
                     send(new SignalData(SignalData.Command.APP_LOOP, SignalData.Parameter.BREAK_ACK).getMessage());
                     commInterface.disconnect();
@@ -407,40 +407,31 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     }
 
     private void handleEventUploadRouteContainer(CommEvent event) throws Exception {
-        double lat = 50.035885;
-        double lon = 19.946766;
-        float vel = 0;
-        float absAlt = 0;
-        float relAlt = 0;
-
-        RouteContainer.Waypoint waypoint = new RouteContainer().new Waypoint(lat, lon, absAlt, relAlt, vel);
-        RouteContainer routeContainer = new RouteContainer();
-        routeContainer.addWaypoint(waypoint);
-
-        switch(uploadRouteState){
+        switch(uploadRouteState) {
             case IDLE:
-                uploadRouteState = UploadRouteStage.RUNNING;
+                System.out.println("Starting RouteContainer upload procedure...");
                 uploadRouteFails = 0;
-                routeContainer.getMessages().forEach(this::send);
+                uploadRouteState = UploadRouteStage.RUNNING;
                 break;
             case RUNNING:
-                if (event.matchSignalData(
-                        new SignalData(SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.ACK))) {
-                    state = State.APP_LOOP;
-                    System.out.println("Route Container upload procedure done successfully");
-                } else if (event.matchSignalData(
-                        new SignalData(SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.DATA_INVALID))) {
-                    System.out.println("Uploading Route Container procedure failed, application reports BAD_CRC, retransmitting...");
-                    uploadRouteFails++;
-                    routeContainer.getMessages().forEach(this::send);
-                } else if (event.matchSignalData(
-                        new SignalData(SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.TIMEOUT))) {
-                    System.out.println("Uploading Route Container procedure failed, application reports TIMEOUT, retransmitting...");
-                    uploadRouteFails++;
-                    routeContainer.getMessages().forEach(this::send);
+                if (event.getType() == CommEvent.EventType.SIGNAL_PAYLOAD_RECEIVED
+                        && ((SignalPayloadEvent) event).getDataType() == SignalData.Command.ROUTE_CONTAINER_DATA) {
+                    SignalPayloadEvent signalEvent = (SignalPayloadEvent) event;
+                    routeContainer = (RouteContainer) signalEvent.getData();
+                    if(routeContainer.isValid()){
+                        System.out.println("Route Container upload procedure done successfully");
+                        send(new SignalData(SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.ACK).getMessage());
+                        debugTask.start();
+                        state = State.APP_LOOP;
+                    } else {
+                        System.out.println("Uploading Route Container procedure failed, application reports DATA_INVALID, retransmitting...");
+                        send(new SignalData(SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.DATA_INVALID).getMessage());
+                        uploadRouteFails++;
+                    }
                 }
                 if (uploadRouteFails >= 3) {
-                    throw new Exception("Uploading Route Container procedure failed, max retransmission limit exceeded!");
+                    System.out.println("Uploading Route Container procedure failed, application reports TIMEOUT, retransmitting...");
+                    send(new SignalData(SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.TIMEOUT).getMessage());
                 }
                 break;
         }
