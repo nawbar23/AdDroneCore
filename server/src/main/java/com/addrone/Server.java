@@ -28,20 +28,21 @@ public class Server implements Runnable {
     private DataInputStream deviceInput;
     private DataOutputStream deviceOutput;
 
-    public Server(int port, ExecutorService executorService) {
+    public Server(int port, ExecutorService executorService, ServerSocket server) {
         this.executorService = executorService;
         this.port = port;
+        this.server = server;
     }
 
     @Override
     public void run() {
-        startServerSocket();
         connectWithDevice();
         connectWithApp();
         deviceParser = new Parser(executorService);
         appParser = new Parser(executorService);
-        executorService.execute(new DataStream(appInput,deviceOutput,this, appParser));
-        executorService.execute(new DataStream(deviceInput, appOutput,this, deviceParser));
+        executorService.execute(new DataStream(appInput, deviceOutput, appParser));
+        executorService.execute(new DataStream(deviceInput, appOutput,deviceParser));
+        executorService.shutdown();
     }
 
     private void connectWithApp() {
@@ -66,21 +67,4 @@ public class Server implements Runnable {
     }
 
 
-
-    public void restoreConnection() {
-        System.out.println("Odnawiam polaczenie");
-        deviceSocket = null;
-        appSocket = null;
-        run();
-    }
-
-    private void startServerSocket() {
-        try {
-            if(server == null) {
-                server = new ServerSocket(port);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 }

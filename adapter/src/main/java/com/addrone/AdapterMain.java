@@ -1,7 +1,7 @@
 package com.addrone;
 
-import com.multicopter.java.simulator.CommHandlerSimulator;
-import com.multicopter.java.simulator.TcpPeer;
+import com.simulator.CommHandlerSimulator;
+import com.simulator.TcpPeer;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -16,14 +16,14 @@ public class AdapterMain {
     private TcpPeer tcpPeer;
     private CommHandlerSimulator commHandlerSimulator;
 
-    public AdapterMain(ExecutorService executorService){
-        this.executorService = executorService;
+    public AdapterMain(){
         start();
     }
 
     public void start(){
         while(true) {
-            tcpPeer = new TcpPeer(executorService, true, this);
+            executorService = Executors.newCachedThreadPool();
+            tcpPeer = new TcpPeer(executorService, true);
             commHandlerSimulator = new CommHandlerSimulator(tcpPeer);
             tcpPeer.setListener(commHandlerSimulator);
             tcpPeer.connect("", 6666);
@@ -40,11 +40,6 @@ public class AdapterMain {
 
 
     public static void main(String[] args) {
-        ExecutorService executorService = Executors.newCachedThreadPool();
-        AdapterMain adapterMain = new AdapterMain(executorService);
-    }
-
-    public void restartTcpPeer() {
-        start();
+        AdapterMain adapterMain = new AdapterMain();
     }
 }
