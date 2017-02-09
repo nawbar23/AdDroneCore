@@ -355,34 +355,34 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
         switch (uploadStage) {
 
             case INIT:
-                System.out.println("Starting Upload Control settings procedure...");
+               // System.out.println("Starting Upload Control settings procedure...");
                 uploadFails = 0;
 
                 //if (event.getType() == CommEvent.EventType.MESSAGE_RECEIVED){
                     uploadStage = UploadControlSettingsStage.UPLOAD_PROCEDURE;
                     System.out.println("Starting Upload Control settings procedure...");
                 //}
-                break;
+                //break;
             case UPLOAD_PROCEDURE:
                 if (event.getType() == CommEvent.EventType.SIGNAL_PAYLOAD_RECEIVED
-                        && ((SignalPayloadEvent)event).getDataType() == SignalData.Command.CONTROL_SETTINGS) {
+                        && ((SignalPayloadEvent)event).getDataType() == SignalData.Command.CONTROL_SETTINGS_DATA) {
 
                     SignalPayloadEvent signalEvent = (SignalPayloadEvent)event;
                     ControlSettings controlSettings  = (ControlSettings) signalEvent.getData();
 
                     if (uploadFails == 3){
                         uploadStage = UploadControlSettingsStage.FINAL;
-                        send(new SignalData(SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.TIMEOUT).getMessage());
+                        send(new SignalData(SignalData.Command.CONTROL_SETTINGS, SignalData.Parameter.TIMEOUT).getMessage());
                         System.out.println("Upload control Settings Timeout");
                     } else if (controlSettings.isValid()) {
                         uploadStage = UploadControlSettingsStage.FINAL;
                         System.out.println("Control settings received");
-                        send(new SignalData(SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.ACK).getMessage());
+                        send(new SignalData(SignalData.Command.CONTROL_SETTINGS, SignalData.Parameter.ACK).getMessage());
                         this.controlSettings = controlSettings;
 
                     } else {
                         System.out.println("Route Container settings received but the data is invalid, responding with DATA_INVALID");
-                        send(new SignalData(SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.DATA_INVALID).getMessage());
+                        send(new SignalData(SignalData.Command.CONTROL_SETTINGS, SignalData.Parameter.DATA_INVALID).getMessage());
                         uploadFails++;
                     }
                 } else {
