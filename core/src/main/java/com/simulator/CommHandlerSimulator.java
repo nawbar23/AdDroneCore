@@ -420,18 +420,18 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     routeContainer = (RouteContainer) signalEvent.getData();
                     if(routeContainer.isValid()){
                         System.out.println("Route Container upload procedure done successfully");
-                        send(new SignalData(SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.ACK).getMessage());
+                        send(new SignalData(SignalData.Command.ROUTE_CONTAINER, SignalData.Parameter.ACK).getMessage());
                         debugTask.start();
                         state = State.APP_LOOP;
                     } else {
                         System.out.println("Uploading Route Container procedure failed, application reports DATA_INVALID, retransmitting...");
-                        send(new SignalData(SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.DATA_INVALID).getMessage());
+                        send(new SignalData(SignalData.Command.ROUTE_CONTAINER, SignalData.Parameter.DATA_INVALID).getMessage());
                         uploadRouteFails++;
                     }
                 }
                 if (uploadRouteFails >= 3) {
                     System.out.println("Uploading Route Container procedure failed, application reports TIMEOUT, retransmitting...");
-                    send(new SignalData(SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.TIMEOUT).getMessage());
+                    send(new SignalData(SignalData.Command.ROUTE_CONTAINER, SignalData.Parameter.TIMEOUT).getMessage());
                 }
                 break;
         }
