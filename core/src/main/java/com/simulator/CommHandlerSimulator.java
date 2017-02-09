@@ -4,7 +4,7 @@ import com.multicopter.java.*;
 import com.multicopter.java.data.*;
 import com.multicopter.java.events.CommEvent;
 import com.multicopter.java.events.MessageEvent;
-import jdk.nashorn.internal.runtime.ECMAException;
+import com.multicopter.java.events.SignalPayloadEvent;
 
 import java.io.IOException;
 import java.util.concurrent.locks.Lock;
@@ -70,7 +70,7 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
 
     private enum UploadControlSettingsStage {
         INIT,
-        CONTROL_ACK,
+        UPLOAD_PROCEDURE,
         FINAL
     }
 
@@ -350,44 +350,44 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
         // TODO and updated at "Upload" action by the data from application.
         // TODO Same shit at RouteContainer upload and download :)
         // TODO So the lines below are not needed (creation of new object) :)
-        ControlSettings controlSettings = new ControlSettings();
-        controlSettings.setRollProp(15);
-        controlSettings.setPitchProp(16);
-        controlSettings.setYawProp(17);
 
-        //controlSettings.getMessages().forEach(this::send);
         System.out.println("Upload control settings stage @"+uploadStage.toString());
         switch (uploadStage) {
 
             case INIT:
-                System.out.println("Starting Control settings procedure...");
+                System.out.println("Starting Upload Control settings procedure...");
                 uploadFails = 0;
-                send(new SignalData(SignalData.Command.CONTROL_SETTINGS, SignalData.Parameter.READY).getMessage());
-                controlSettings.getMessages().forEach(this::send);
-                uploadStage = UploadControlSettingsStage.CONTROL_ACK;
+
+                if (event.getType() == CommEvent.EventType.MESSAGE_RECEIVED){
+                    uploadStage = UploadControlSettingsStage.UPLOAD_PROCEDURE;
+                    System.out.println("Starting Upload Control settings procedure...");
+                }
                 break;
+            case UPLOAD_PROCEDURE:
+                if (event.getType() == CommEvent.EventType.SIGNAL_PAYLOAD_RECEIVED
+                        && ((SignalPayloadEvent)event).getDataType() == SignalData.Command.CONTROL_SETTINGS_DATA) {
 
-            case CONTROL_ACK:
-                if (event.matchSignalData(
-                        new SignalData(SignalData.Command.CONTROL_SETTINGS, SignalData.Parameter.ACK))) {
-                    uploadStage = UploadControlSettingsStage.FINAL;
-                    System.out.println("Control settings procedure done successfully, waiting for final command");
-                } else if (event.matchSignalData(
-                        new SignalData(SignalData.Command.CONTROL_SETTINGS, SignalData.Parameter.DATA_INVALID))) {
-                    System.out.println("Sending Control settings failed, application reports BAD_CRC, retransmitting...");
-                    uploadFails++;
-                    controlSettings.getMessages().forEach(this::send);
-                } else if (event.matchSignalData(
-                        new SignalData(SignalData.Command.CONTROL_SETTINGS, SignalData.Parameter.TIMEOUT))) {
-                    System.out.println("Sending Control settings failed, application reports TIMEOUT, retransmitting...");
-                    uploadFails++;
-                    controlSettings.getMessages().forEach(this::send);
-                }
-                if (uploadFails >= 3) {
-                    uploadStage = UploadControlSettingsStage.FINAL;
-                    System.out.println("Control settings procedure failed, max retransmission limit exceeded!");
-                }
+                    SignalPayloadEvent signalEvent = (SignalPayloadEvent)event;
+                    ControlSettings controlSettings  = (ControlSettings) signalEvent.getData();
 
+                    if (uploadFails == 3){
+                        uploadStage = UploadControlSettingsStage.FINAL;
+                        send(new SignalData(SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.TIMEOUT).getMessage());
+                        System.out.println("Upload control Settings Timeout");
+                    } else if (controlSettings.isValid()) {
+                        uploadStage = UploadControlSettingsStage.FINAL;
+                        System.out.println("Control settings received");
+                        send(new SignalData(SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.ACK).getMessage());
+                        this.controlSettings = controlSettings;
+
+                    } else {
+                        System.out.println("Route Container settings received but the data is invalid, responding with DATA_INVALID");
+                        send(new SignalData(SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.DATA_INVALID).getMessage());
+                        uploadFails++;
+                    }
+                } else {
+                    System.out.println("Unexpected event received at state " + state.toString());
+                }
                 break;
             case FINAL:
                 debugTask.start();
