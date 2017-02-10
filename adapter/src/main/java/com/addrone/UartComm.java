@@ -21,7 +21,6 @@ public class UartComm extends CommInterface implements SerialPortEventListener {
             event = new UavEvent(UavEvent.Type.CONNECTED);
         } catch (SerialPortException e) {
             System.out.print("Cannot open port: " + serialPort.getPortName() + "- try again or change open parameters\n");
-            listener.onError(new IOException(e.getMessage(), e.getCause()));
             event = new UavEvent(UavEvent.Type.ERROR);
         }
     }
@@ -29,9 +28,9 @@ public class UartComm extends CommInterface implements SerialPortEventListener {
     @Override
     public void disconnect() {
         try {
-            listener.onDisconnected();
             event = new UavEvent(UavEvent.Type.DISCONNECTED);
             serialPort.closePort();
+            listener.onDisconnected();
         } catch (SerialPortException e) {
             System.out.println("Cannot close port: " + serialPort.getPortName() + "\n");
             listener.onError(new IOException(e.getMessage(), e.getCause()));
@@ -45,7 +44,7 @@ public class UartComm extends CommInterface implements SerialPortEventListener {
         try {
             serialPort.writeBytes(data);
         } catch (SerialPortException e) {
-            System.out.println("Send error - verify your data\n");
+            System.out.println("Send error\n");
             listener.onError(new IOException(e.getMessage(), e.getCause()));
         }
     }
@@ -58,7 +57,7 @@ public class UartComm extends CommInterface implements SerialPortEventListener {
                 listener.onDataReceived(data, data.length);
             }
         } catch (SerialPortException e) {
-            System.out.println("Send error - verify your data\n");
+            System.out.println("Receive error\n");
             listener.onError(new IOException(e.getMessage(), e.getCause()));
         }
     }

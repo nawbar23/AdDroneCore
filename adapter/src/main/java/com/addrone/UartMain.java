@@ -2,8 +2,6 @@ package com.addrone;
 
 import com.multicopter.java.UavEvent;
 import com.multicopter.java.UavManager;
-import com.multicopter.java.data.SignalData;
-
 
 /**
  * Created by ewitklu on 2017-02-07.
@@ -22,6 +20,26 @@ public class UartMain {
                 System.out.println("ERROR");
                 keepUartLoop = false;
             }
+            else if(event.getType() == UavEvent.Type.CONNECTED)
+            {
+                System.out.println("CONNECTED");
+            }
+            else if(event.getType() == UavEvent.Type.FLIGHT_STARTED)
+            {
+                System.out.println("FLIGHT STARTED");
+            }
+            else if(event.getType() == UavEvent.Type.FLIGHT_ENDED)
+            {
+                System.out.println("FLIGHT ENDED");
+            }
+            else if(event.getType() == UavEvent.Type.MAGNETOMETER_CALIBRATION_STARTED)
+            {
+                System.out.println("MAGNETOMETER CALIBRATION STARTED");
+            }
+            else if(event.getType() == UavEvent.Type.MAGNETOMETER_CALIBRATION_STARTED)
+            {
+                System.out.println("MAGNETOMETER CALIBRATION STARTED");
+            }
         }
     }
 
@@ -36,15 +54,11 @@ public class UartMain {
         uavManager.registerListener(listenerForUavManager);
 
         uartComm.connect("", 5);
-
-     while (listenerForUavManager.keepUartLoop){
-            try {
-                Thread.sleep(5000);
-                uavManager.disconnectApplicationLoop();
-            } catch (Exception e) {
-                System.out.println("Something was wrong");
+        if (uartComm.serialPort.isOpened()) {
+            while (listenerForUavManager.keepUartLoop == true) {
             }
+            if (uartComm.event.getType() == UavEvent.Type.CONNECTED)
+                uartComm.disconnect();
         }
-        uartComm.disconnect();
     }
 }
