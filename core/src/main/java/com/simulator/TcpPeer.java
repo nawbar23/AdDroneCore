@@ -1,4 +1,4 @@
-package com.clients;
+package com.simulator;
 
 import com.multicopter.java.CommInterface;
 import com.multicopter.java.CommMessage;
@@ -8,12 +8,13 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 
 /**
  * Created by ebarnaw on 2017-01-03.
  */
-public class TcpServer extends CommInterface implements Runnable  {
+public class TcpPeer extends CommInterface implements Runnable  {
 
     private ExecutorService executorService;
 
@@ -28,13 +29,14 @@ public class TcpServer extends CommInterface implements Runnable  {
 
     private boolean adapterMode;
 
-    public TcpServer(ExecutorService executorService) {
+
+    public TcpPeer(ExecutorService executorService) {
         super();
         this.executorService = executorService;
         this.state = State.DISCONNECTED;
     }
 
-    public TcpServer(ExecutorService executorService, boolean adapterMode){
+    public TcpPeer(ExecutorService executorService, boolean adapterMode){
         this.executorService = executorService;
         this.state = State.DISCONNECTED;
         this.adapterMode = adapterMode;
@@ -60,7 +62,7 @@ public class TcpServer extends CommInterface implements Runnable  {
 
     @Override
     public void disconnect()  {
-        state = State.DISCONNECTING;
+            state = State.DISCONNECTING;
     }
 
     @Override
@@ -78,12 +80,11 @@ public class TcpServer extends CommInterface implements Runnable  {
     public void run() {
         DataInputStream inputStream = null;
         try {
-            if(adapterMode) {
+            if (adapterMode) {
                 serverSocket = new ServerSocket(port);
                 System.out.println("Server started, waiting for connection");
                 socket = serverSocket.accept();
-            }
-            else{
+            } else {
                 socket = new Socket("localhost", 6666);
             }
 
@@ -95,7 +96,7 @@ public class TcpServer extends CommInterface implements Runnable  {
             listener.onConnected();
 
             byte buffer[] = new byte[1024];
-            while(state != State.DISCONNECTING) {
+            while (state != State.DISCONNECTING) {
                 int len = inputStream.available();
                 if (len > 1024) len = 1024;
                 int dataSize = inputStream.read(buffer, 0, len);
@@ -105,29 +106,39 @@ public class TcpServer extends CommInterface implements Runnable  {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+
             }
         }
-        catch (IOException e)
-        {
+        catch(IOException e){
             e.printStackTrace();
             listener.onError(e);
         }
 
         if (inputStream != null) {
             try {
+                System.out.println("Closing stream");
+                byte[] bytes = new byte[1024];
+                Arrays.fill(bytes, (byte) 1);
+                outputStream.write(bytes);
                 inputStream.close();
+                outputStream.close();
+                socket.close();
+                if (socket.isClosed()){
+                    System.out.println("Socket closed");
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
 
-        try {
-            serverSocket.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.out.println(e.getMessage());
+        if(serverSocket != null) {
+            try {
+                serverSocket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.out.println(e.getMessage());
+            }
         }
-
         state = State.DISCONNECTED;
         listener.onDisconnected();
     }

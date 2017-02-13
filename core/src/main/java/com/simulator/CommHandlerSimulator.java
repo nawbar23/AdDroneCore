@@ -161,7 +161,6 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     }
 
     private void handleEventAppLoop(CommEvent event) throws Exception {
-
         if (event.getType() == CommEvent.EventType.MESSAGE_RECEIVED) {
             CommMessage msg = ((MessageEvent) event).getMessage();
             if (msg.getType() == CommMessage.MessageType.SIGNAL) {

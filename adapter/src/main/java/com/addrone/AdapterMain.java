@@ -1,7 +1,7 @@
 package com.addrone;
 
 import com.simulator.CommHandlerSimulator;
-import com.clients.TcpServer;
+import com.simulator.TcpPeer;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -11,15 +11,22 @@ import java.util.concurrent.TimeUnit;
  * Created by ebarnaw on 2016-12-13.
  */
 public class AdapterMain {
-    public static void main(String[] args) {
-        while (true) {
-            ExecutorService executorService = Executors.newCachedThreadPool();
-            TcpServer tcpServer = new TcpServer(executorService, true);
-            CommHandlerSimulator commHandlerSimulator = new CommHandlerSimulator(tcpServer);
 
-            tcpServer.setListener(commHandlerSimulator);
-            tcpServer.connect("", 6666);
+    private ExecutorService executorService;
+    private TcpPeer tcpPeer;
+    private CommHandlerSimulator commHandlerSimulator;
 
+    public AdapterMain(){
+        start();
+    }
+
+    public void start(){
+        while(true) {
+            executorService = Executors.newCachedThreadPool();
+            tcpPeer = new TcpPeer(executorService, true);
+            commHandlerSimulator = new CommHandlerSimulator(tcpPeer);
+            tcpPeer.setListener(commHandlerSimulator);
+            tcpPeer.connect("", 6666);
             executorService.shutdown();
             try {
                 executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
@@ -29,5 +36,9 @@ public class AdapterMain {
                 break;
             }
         }
+    }
+
+    public static void main(String[] args) {
+        AdapterMain adapterMain = new AdapterMain();
     }
 }
