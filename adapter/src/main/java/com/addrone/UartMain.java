@@ -56,6 +56,7 @@ public class UartMain {
         uartComm.connect("", 5);
         if (uartComm.serialPort.isOpened()) {
             while (listenerForUavManager.keepUartLoop == true) {
+
             }
             if (uartComm.event.getType() == UavEvent.Type.CONNECTED)
                 uartComm.disconnect();

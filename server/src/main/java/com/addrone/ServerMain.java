@@ -64,10 +64,16 @@ public class ServerMain {
     }
 
     private void startServer() {
-        executorService.execute(server);
+        try {
+            ServerSocket serverSocket = new ServerSocket(6666);
+            server = new Server(6666, executorService, serverSocket);
+            executorService.execute(server);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public static void main(String[] args) {
-        ServerMain serverMain = new ServerMain(ServerMode.ADAPTER);
+        ServerMain serverMain = new ServerMain(ServerMode.BRIDGE);
     }
 }
