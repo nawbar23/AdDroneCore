@@ -4,7 +4,6 @@ import com.multicopter.java.*;
 import com.multicopter.java.data.*;
 import com.multicopter.java.events.CommEvent;
 import com.multicopter.java.events.MessageEvent;
-import jdk.nashorn.internal.runtime.ECMAException;
 import com.multicopter.java.events.SignalPayloadEvent;
 
 import java.io.IOException;
