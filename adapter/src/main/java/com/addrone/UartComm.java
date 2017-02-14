@@ -1,7 +1,9 @@
 package com.addrone;
 
 import com.multicopter.java.*;
+import com.simulator.TcpPeer;
 import jssc.*;
+
 import java.io.IOException;
 
 public class UartComm extends CommInterface implements SerialPortEventListener {
