@@ -22,8 +22,6 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     private State state;
     private FlightLoopStage flightLoopStage;
     private MagnetometerStage magnetometerState;
-    private UploadControlSettingsStage uploadStage;
-    private UploadRouteStage uploadRouteState;
     private ConnectionStage connectionStage;
 
     private CalibrationSettings calibrationSettings = getStartCalibrationSettings();
@@ -66,17 +64,6 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     private enum MagnetometerStage {
         USER_COMMAND,
         CALIBRATION_ACK
-    }
-
-    private enum UploadControlSettingsStage {
-        INIT,
-        UPLOAD_PROCEDURE,
-        FINAL
-    }
-
-    private enum UploadRouteStage {
-        IDLE,
-        RUNNING
     }
 
     public CommHandlerSimulator(CommInterface commInterface) {
@@ -202,8 +189,8 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
 
                 } else if(event.matchSignalData(new SignalData(SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.START))){
                     System.out.println("Uploading ControlSettings");
+                    uploadFails = 0;
                     state = State.UPLOAD_CONTROL_SETTINGS;
-                    uploadStage = UploadControlSettingsStage.INIT;
                     debugTask.stop();
                     send(new SignalData(SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.ACK).getMessage());
 
@@ -216,8 +203,8 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
 
                 } else if(event.matchSignalData(new SignalData(SignalData.Command.UPLOAD_ROUTE, SignalData.Parameter.START))){
                     System.out.println("Starting RouteContainer upload procedure");
+                    uploadRouteFails = 0;
                     state = State.UPLOAD_ROUTE_CONTAINER;
-                    uploadRouteState = UploadRouteStage.IDLE;
                     debugTask.stop();
                     send(new SignalData(SignalData.Command.UPLOAD_ROUTE, SignalData.Parameter.ACK).getMessage());
 
@@ -340,60 +327,36 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     }
 
     private void handleEventUploadControlSettings(CommEvent event) throws Exception{
+        System.out.println("Starting Upload Control settings procedure...");
 
-        // TODO At "Upload" action, we as "Simulator" do not send settings, we are receiving them (upload and download are from user perspective).
-        // TODO Also even when we are in "Download" we do not have to create 'new ControlSettings' object,
-        // TODO we have to send actually contained object in filed: 'controlSettings'.
-        // TODO This object should be created be default at Simulator creation
-        // TODO and updated at "Upload" action by the data from application.
-        // TODO Same shit at RouteContainer upload and download :)
-        // TODO So the lines below are not needed (creation of new object) :)
+        if (event.getType() == CommEvent.EventType.SIGNAL_PAYLOAD_RECEIVED
+                && ((SignalPayloadEvent)event).getDataType() == SignalData.Command.CONTROL_SETTINGS_DATA) {
 
-        System.out.println("Upload control settings stage @"+uploadStage.toString());
-        switch (uploadStage) {
+            SignalPayloadEvent signalEvent = (SignalPayloadEvent) event;
+            ControlSettings controlSettings  = (ControlSettings) signalEvent.getData();
 
-            case INIT:
-               // System.out.println("Starting Upload Control settings procedure...");
-                uploadFails = 0;
-
-                //if (event.getType() == CommEvent.EventType.MESSAGE_RECEIVED){
-                    uploadStage = UploadControlSettingsStage.UPLOAD_PROCEDURE;
-                    System.out.println("Starting Upload Control settings procedure...");
-                //}
-                //break;
-            case UPLOAD_PROCEDURE:
-                if (event.getType() == CommEvent.EventType.SIGNAL_PAYLOAD_RECEIVED
-                        && ((SignalPayloadEvent)event).getDataType() == SignalData.Command.CONTROL_SETTINGS_DATA) {
-
-                    SignalPayloadEvent signalEvent = (SignalPayloadEvent)event;
-                    ControlSettings controlSettings  = (ControlSettings) signalEvent.getData();
-
-                    if (uploadFails == 3){
-                        uploadStage = UploadControlSettingsStage.FINAL;
-                        send(new SignalData(SignalData.Command.CONTROL_SETTINGS, SignalData.Parameter.TIMEOUT).getMessage());
-                        System.out.println("Upload control Settings Timeout");
-                    } else if (controlSettings.isValid()) {
-                        uploadStage = UploadControlSettingsStage.FINAL;
-                        System.out.println("Control settings received");
-                        send(new SignalData(SignalData.Command.CONTROL_SETTINGS, SignalData.Parameter.ACK).getMessage());
-                        this.controlSettings = controlSettings;
-
-                    } else {
-                        System.out.println("Route Container settings received but the data is invalid, responding with DATA_INVALID");
-                        send(new SignalData(SignalData.Command.CONTROL_SETTINGS, SignalData.Parameter.DATA_INVALID).getMessage());
-                        uploadFails++;
-                    }
-                } else {
-                    System.out.println("Unexpected event received at state " + state.toString());
-                }
-                break;
-            case FINAL:
-                debugTask.start();
+            if (uploadFails == 3){
                 state = State.APP_LOOP;
-                break;
+                send(new SignalData(SignalData.Command.CONTROL_SETTINGS, SignalData.Parameter.TIMEOUT).getMessage());
+                System.out.println("Upload control Settings Timeout");
+                debugTask.start();
+            } else if (controlSettings.isValid()) {
+                state = State.APP_LOOP;
+                System.out.println("Control settings received");
+                send(new SignalData(SignalData.Command.CONTROL_SETTINGS, SignalData.Parameter.ACK).getMessage());
+                this.controlSettings = controlSettings;
+                debugTask.start();
+            } else {
+                System.out.println("Control settings received but the data is invalid, responding with DATA_INVALID");
+                send(new SignalData(SignalData.Command.CONTROL_SETTINGS, SignalData.Parameter.DATA_INVALID).getMessage());
+                uploadFails++;
+            }
+        } else {
+            System.out.println("Unexpected event received at state " + state.toString());
+            state = State.APP_LOOP;
+            debugTask.start();
         }
     }
-
 
     private void handleEventDownloadControlSettings(CommEvent event) throws Exception {
         // Download is from user perspective, here data is send to application
@@ -405,33 +368,35 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     }
 
     private void handleEventUploadRouteContainer(CommEvent event) throws Exception {
-        switch(uploadRouteState) {
-            case IDLE:
-                System.out.println("Starting RouteContainer upload procedure...");
-                uploadRouteFails = 0;
-                uploadRouteState = UploadRouteStage.RUNNING;
-                break;
-            case RUNNING:
-                if (event.getType() == CommEvent.EventType.SIGNAL_PAYLOAD_RECEIVED
-                        && ((SignalPayloadEvent) event).getDataType() == SignalData.Command.ROUTE_CONTAINER_DATA) {
-                    SignalPayloadEvent signalEvent = (SignalPayloadEvent) event;
-                    routeContainer = (RouteContainer) signalEvent.getData();
-                    if(routeContainer.isValid()){
-                        System.out.println("Route Container upload procedure done successfully");
-                        send(new SignalData(SignalData.Command.ROUTE_CONTAINER, SignalData.Parameter.ACK).getMessage());
-                        debugTask.start();
-                        state = State.APP_LOOP;
-                    } else {
-                        System.out.println("Uploading Route Container procedure failed, application reports DATA_INVALID, retransmitting...");
-                        send(new SignalData(SignalData.Command.ROUTE_CONTAINER, SignalData.Parameter.DATA_INVALID).getMessage());
-                        uploadRouteFails++;
-                    }
-                }
-                if (uploadRouteFails >= 3) {
-                    System.out.println("Uploading Route Container procedure failed, application reports TIMEOUT, retransmitting...");
-                    send(new SignalData(SignalData.Command.ROUTE_CONTAINER, SignalData.Parameter.TIMEOUT).getMessage());
-                }
-                break;
+        System.out.println("Starting RouteContainer upload procedure...");
+
+        if (event.getType() == CommEvent.EventType.SIGNAL_PAYLOAD_RECEIVED
+                && ((SignalPayloadEvent) event).getDataType() == SignalData.Command.ROUTE_CONTAINER_DATA) {
+
+            SignalPayloadEvent signalEvent = (SignalPayloadEvent) event;
+            RouteContainer routeContainer = (RouteContainer) signalEvent.getData();
+
+            if(routeContainer.isValid()){
+                state = State.APP_LOOP;
+                System.out.println("RouteContainer upload procedure done successfully");
+                send(new SignalData(SignalData.Command.ROUTE_CONTAINER, SignalData.Parameter.ACK).getMessage());
+                this.routeContainer = routeContainer;
+                debugTask.start();
+            } else if(uploadRouteFails >= 3){
+                state = State.APP_LOOP;
+                System.out.println("Uploading RouteContainer procedure Timeout");
+                send(new SignalData(SignalData.Command.ROUTE_CONTAINER, SignalData.Parameter.TIMEOUT).getMessage());
+                debugTask.start();
+            } else {
+                System.out.println("Uploading RouteContainer procedure failed, application reports DATA_INVALID, retransmitting...");
+                send(new SignalData(SignalData.Command.ROUTE_CONTAINER, SignalData.Parameter.DATA_INVALID).getMessage());
+                uploadRouteFails++;
+            }
+        }
+        else {
+            System.out.println("Unexpected event received at state " + state.toString());
+            state = State.APP_LOOP;
+            debugTask.start();
         }
     }
 
@@ -487,6 +452,7 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
 
     private CalibrationSettings getStartCalibrationSettings() {
         CalibrationSettings result = new CalibrationSettings();
+        result.setBoardTypeValue(CalibrationSettings.BoardType.TYPE_BASIC_V3.getValue());
         result.setGyroOffset(new float[]{getRandN() * 400.0f, getRandN() * 400.f, getRandN() * 200.0f});
         result.setFlagState(CalibrationSettings.FlagId.IS_GPS_CONNECTED, true);
         result.setCrc();
