@@ -22,7 +22,6 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     private State state;
     private FlightLoopStage flightLoopStage;
     private MagnetometerStage magnetometerState;
-    private UploadControlSettingsStage uploadStage;
     private ConnectionStage connectionStage;
 
     private CalibrationSettings calibrationSettings = getStartCalibrationSettings();
@@ -65,12 +64,6 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     private enum MagnetometerStage {
         USER_COMMAND,
         CALIBRATION_ACK
-    }
-
-    private enum UploadControlSettingsStage {
-        INIT,
-        UPLOAD_PROCEDURE,
-        FINAL
     }
 
     public CommHandlerSimulator(CommInterface commInterface) {
@@ -198,7 +191,6 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     System.out.println("Uploading ControlSettings");
                     uploadFails = 0;
                     state = State.UPLOAD_CONTROL_SETTINGS;
-                    uploadStage = UploadControlSettingsStage.INIT;
                     debugTask.stop();
                     send(new SignalData(SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.ACK).getMessage());
 
@@ -335,7 +327,6 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     }
 
     private void handleEventUploadControlSettings(CommEvent event) throws Exception{
-        System.out.println("Upload control settings stage @"+uploadStage.toString());
         System.out.println("Starting Upload Control settings procedure...");
 
         if (event.getType() == CommEvent.EventType.SIGNAL_PAYLOAD_RECEIVED
@@ -377,7 +368,6 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     }
 
     private void handleEventUploadRouteContainer(CommEvent event) throws Exception {
-        System.out.println("Upload control settings stage @"+uploadStage.toString());
         System.out.println("Starting RouteContainer upload procedure...");
 
         if (event.getType() == CommEvent.EventType.SIGNAL_PAYLOAD_RECEIVED
