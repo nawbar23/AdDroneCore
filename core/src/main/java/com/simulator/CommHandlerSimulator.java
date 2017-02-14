@@ -202,6 +202,7 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
 
                 } else if(event.matchSignalData(new SignalData(SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.START))){
                     System.out.println("Uploading ControlSettings");
+                    uploadFails = 0;
                     state = State.UPLOAD_CONTROL_SETTINGS;
                     uploadStage = UploadControlSettingsStage.INIT;
                     debugTask.stop();
@@ -340,60 +341,37 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     }
 
     private void handleEventUploadControlSettings(CommEvent event) throws Exception{
-
-        // TODO At "Upload" action, we as "Simulator" do not send settings, we are receiving them (upload and download are from user perspective).
-        // TODO Also even when we are in "Download" we do not have to create 'new ControlSettings' object,
-        // TODO we have to send actually contained object in filed: 'controlSettings'.
-        // TODO This object should be created be default at Simulator creation
-        // TODO and updated at "Upload" action by the data from application.
-        // TODO Same shit at RouteContainer upload and download :)
-        // TODO So the lines below are not needed (creation of new object) :)
-
         System.out.println("Upload control settings stage @"+uploadStage.toString());
-        switch (uploadStage) {
+        System.out.println("Starting Upload Control settings procedure...");
 
-            case INIT:
-               // System.out.println("Starting Upload Control settings procedure...");
-                uploadFails = 0;
+        if (event.getType() == CommEvent.EventType.SIGNAL_PAYLOAD_RECEIVED
+                && ((SignalPayloadEvent)event).getDataType() == SignalData.Command.CONTROL_SETTINGS_DATA) {
 
-                //if (event.getType() == CommEvent.EventType.MESSAGE_RECEIVED){
-                    uploadStage = UploadControlSettingsStage.UPLOAD_PROCEDURE;
-                    System.out.println("Starting Upload Control settings procedure...");
-                //}
-                //break;
-            case UPLOAD_PROCEDURE:
-                if (event.getType() == CommEvent.EventType.SIGNAL_PAYLOAD_RECEIVED
-                        && ((SignalPayloadEvent)event).getDataType() == SignalData.Command.CONTROL_SETTINGS_DATA) {
+            SignalPayloadEvent signalEvent = (SignalPayloadEvent) event;
+            ControlSettings controlSettings  = (ControlSettings) signalEvent.getData();
 
-                    SignalPayloadEvent signalEvent = (SignalPayloadEvent)event;
-                    ControlSettings controlSettings  = (ControlSettings) signalEvent.getData();
-
-                    if (uploadFails == 3){
-                        uploadStage = UploadControlSettingsStage.FINAL;
-                        send(new SignalData(SignalData.Command.CONTROL_SETTINGS, SignalData.Parameter.TIMEOUT).getMessage());
-                        System.out.println("Upload control Settings Timeout");
-                    } else if (controlSettings.isValid()) {
-                        uploadStage = UploadControlSettingsStage.FINAL;
-                        System.out.println("Control settings received");
-                        send(new SignalData(SignalData.Command.CONTROL_SETTINGS, SignalData.Parameter.ACK).getMessage());
-                        this.controlSettings = controlSettings;
-
-                    } else {
-                        System.out.println("Route Container settings received but the data is invalid, responding with DATA_INVALID");
-                        send(new SignalData(SignalData.Command.CONTROL_SETTINGS, SignalData.Parameter.DATA_INVALID).getMessage());
-                        uploadFails++;
-                    }
-                } else {
-                    System.out.println("Unexpected event received at state " + state.toString());
-                }
-                break;
-            case FINAL:
-                debugTask.start();
+            if (uploadFails == 3){
                 state = State.APP_LOOP;
-                break;
+                send(new SignalData(SignalData.Command.CONTROL_SETTINGS, SignalData.Parameter.TIMEOUT).getMessage());
+                System.out.println("Upload control Settings Timeout");
+                debugTask.start();
+            } else if (controlSettings.isValid()) {
+                state = State.APP_LOOP;
+                System.out.println("Control settings received");
+                send(new SignalData(SignalData.Command.CONTROL_SETTINGS, SignalData.Parameter.ACK).getMessage());
+                this.controlSettings = controlSettings;
+                debugTask.start();
+            } else {
+                System.out.println("Control settings received but the data is invalid, responding with DATA_INVALID");
+                send(new SignalData(SignalData.Command.CONTROL_SETTINGS, SignalData.Parameter.DATA_INVALID).getMessage());
+                uploadFails++;
+            }
+        } else {
+            System.out.println("Unexpected event received at state " + state.toString());
+            state = State.APP_LOOP;
+            debugTask.start();
         }
     }
-
 
     private void handleEventDownloadControlSettings(CommEvent event) throws Exception {
         // Download is from user perspective, here data is send to application

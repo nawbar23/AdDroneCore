@@ -37,10 +37,9 @@ public class Server implements Runnable {
     public void run() {
         connectWithDevice();
         connectWithApp();
-        deviceParser = new Parser(executorService);
-        appParser = new Parser(executorService);
-        executorService.execute(new DataStream(appInput, deviceOutput, appParser));
-        executorService.execute(new DataStream(deviceInput, appOutput,deviceParser));
+
+        executorService.execute(new DataStream(appInput, deviceOutput));
+        executorService.execute(new DataStream(deviceInput, appOutput));
         executorService.shutdown();
     }
 

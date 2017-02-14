@@ -4,6 +4,8 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Created by efrytom on 2017-01-13.
@@ -14,11 +16,12 @@ public class DataStream implements Runnable {
     private DataOutputStream output;
     private Parser parser;
     private boolean dataReceived;
+    private ExecutorService executorService;
 
-    public DataStream(DataInputStream input, DataOutputStream output,Parser parser) {
+    public DataStream(DataInputStream input, DataOutputStream output) {
         this.input = input;
         this.output = output;
-        this.parser = parser;
+        executorService = Executors.newFixedThreadPool(5);
     }
 
     @Override
@@ -35,6 +38,7 @@ public class DataStream implements Runnable {
                 if (len > 1024) len = 1024;
                 int read = input.read(byteArray, 0, len);
                 output.write(byteArray, 0, read);
+                executorService.execute(new Parser(byteArray, len));
                 if(Arrays.equals(byteArray, bytes) && dataReceived){
                     input.close();
                     output.close();
