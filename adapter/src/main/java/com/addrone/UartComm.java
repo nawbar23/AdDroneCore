@@ -6,10 +6,12 @@ import jssc.*;
 
 import java.io.IOException;
 
-public class UartComm extends CommInterface implements SerialPortEventListener {
+public class UartComm extends CommInterface implements SerialPortEventListener, CommInterface.CommInterfaceListener {
 
-    protected UavEvent event;
-    protected SerialPort serialPort;
+    private UavEvent event;
+    private SerialPort serialPort;
+    private TcpPeer tcpPeer;
+
 
     @Override
     public void connect(String ipAddress, int port) {
@@ -62,5 +64,25 @@ public class UartComm extends CommInterface implements SerialPortEventListener {
             System.out.println("Receive error\n");
             listener.onError(new IOException(e.getMessage(), e.getCause()));
         }
+    }
+
+    @Override
+    public void onConnected() {
+
+    }
+
+    @Override
+    public void onDisconnected() {
+
+    }
+
+    @Override
+    public void onError(IOException e) {
+
+    }
+
+    @Override
+    public void onDataReceived(byte[] data, int dataSize) {
+
     }
 }
