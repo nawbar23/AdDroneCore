@@ -18,8 +18,6 @@ public class Server implements Runnable {
     private ServerSocket server;
     private Socket appSocket;
     private Socket deviceSocket;
-    private Parser deviceParser;
-    private Parser appParser;
 
     private DataInputStream appInput;
     private DataOutputStream appOutput;
@@ -27,26 +25,23 @@ public class Server implements Runnable {
     private DataOutputStream deviceOutput;
     private ScheduledExecutorService scheduledExecutorService;
 
-    private ConcurrentLinkedQueue concurrentLinkedQueue;
 
     public Server(int port, ExecutorService executorService, ServerSocket server) {
         this.executorService = executorService;
         this.port = port;
         this.server = server;
-        concurrentLinkedQueue = new ConcurrentLinkedQueue();
         scheduledExecutorService = Executors.newScheduledThreadPool(1);
-
     }
 
     @Override
     public void run() {
         connectWithDevice();
         connectWithApp();
-        DataStream dataStream = new DataStream(deviceInput, appOutput);
+        DataStream dataStream = new DataStream(deviceInput, appOutput, scheduledExecutorService);
         executorService.execute(new DataStream(appInput, deviceOutput));
         Parser parser = new Parser(dataStream);
         executorService.execute(dataStream);
-        scheduledExecutorService.schedule(parser,500, TimeUnit.MILLISECONDS);
+        scheduledExecutorService.scheduleAtFixedRate(parser,500,500,TimeUnit.MILLISECONDS);
         executorService.shutdown();
     }
 
