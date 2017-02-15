@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by efrytom on 2017-01-13.
@@ -14,19 +16,34 @@ public class DataStream implements Runnable {
 
     private DataInputStream input;
     private DataOutputStream output;
-    private Parser parser;
     private boolean dataReceived;
-    private ExecutorService executorService;
+    private byte[] byteArray;
+    private ReentrantLock reentrantLock;
+    private ScheduledExecutorService scheduledExecutorService;
 
     public DataStream(DataInputStream input, DataOutputStream output) {
         this.input = input;
         this.output = output;
-        executorService = Executors.newFixedThreadPool(5);
+        reentrantLock = new ReentrantLock();
+    }
+
+    public DataStream(DataInputStream input, DataOutputStream output, ScheduledExecutorService scheduledExecutorService) {
+        this.input = input;
+        this.output = output;
+        this.scheduledExecutorService = scheduledExecutorService;
+        reentrantLock = new ReentrantLock();
+    }
+
+    public byte[] sendToParser(){
+        reentrantLock.lock();
+        byte[] bytesArrays = byteArray;
+        reentrantLock.unlock();
+        return bytesArrays;
     }
 
     @Override
     public void run() {
-        byte[] byteArray = new byte[1024];
+        byteArray = new byte[1024];
         byte[] bytes = new byte[1024];
         Arrays.fill(bytes, (byte) 1);
         while(true) {
@@ -38,10 +55,12 @@ public class DataStream implements Runnable {
                 if (len > 1024) len = 1024;
                 int read = input.read(byteArray, 0, len);
                 output.write(byteArray, 0, read);
-                executorService.execute(new Parser(byteArray, len));
                 if(Arrays.equals(byteArray, bytes) && dataReceived){
                     input.close();
                     output.close();
+                    if(scheduledExecutorService != null){
+                        scheduledExecutorService.shutdown();
+                    }
                     break;
                 }
             } catch (IOException e) {

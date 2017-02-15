@@ -1,7 +1,6 @@
 package com.simulator;
 
 import com.multicopter.java.CommInterface;
-import com.multicopter.java.CommMessage;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -23,23 +22,17 @@ public class TcpPeer extends CommInterface implements Runnable  {
 
     private DataOutputStream outputStream;
 
+    private String ipAddress;
     private int port;
 
     private State state;
 
-    private boolean adapterMode;
+    private boolean serverMode;
 
-
-    public TcpPeer(ExecutorService executorService) {
-        super();
+    public TcpPeer(ExecutorService executorService, boolean serverMode){
         this.executorService = executorService;
         this.state = State.DISCONNECTED;
-    }
-
-    public TcpPeer(ExecutorService executorService, boolean adapterMode){
-        this.executorService = executorService;
-        this.state = State.DISCONNECTED;
-        this.adapterMode = adapterMode;
+        this.serverMode = serverMode;
     }
 
 
@@ -52,9 +45,7 @@ public class TcpPeer extends CommInterface implements Runnable  {
 
     @Override
     public void connect(String ipAddress, int port) {
-//        if (state != State.DISCONNECTED) {
-//            throw new Exception("Can not connect when already in working state!");
-//        }
+        this.ipAddress = ipAddress;
         this.port = port;
         state = State.CONNECTING;
         executorService.execute(this);
@@ -68,7 +59,7 @@ public class TcpPeer extends CommInterface implements Runnable  {
     @Override
     public void send(byte[] data) {
         try {
-            System.out.println("Sending: 0x" + CommMessage.byteArrayToHexString(data));
+            //System.out.println("Sending: 0x" + CommMessage.byteArrayToHexString(data));
             outputStream.write(data, 0, data.length);
         } catch (IOException e) {
             System.out.println("Error while sending: " + e.getMessage());
@@ -80,12 +71,12 @@ public class TcpPeer extends CommInterface implements Runnable  {
     public void run() {
         DataInputStream inputStream = null;
         try {
-            if (adapterMode) {
+            if (serverMode) {
                 serverSocket = new ServerSocket(port);
                 System.out.println("Server started, waiting for connection");
                 socket = serverSocket.accept();
             } else {
-                socket = new Socket("localhost", 6666);
+                socket = new Socket(ipAddress, port);
             }
 
             outputStream = new DataOutputStream(socket.getOutputStream());

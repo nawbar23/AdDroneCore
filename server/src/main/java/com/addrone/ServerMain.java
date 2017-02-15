@@ -45,13 +45,14 @@ public class ServerMain {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+            System.out.println("Starting server with adapter mode");
             executorService = Executors.newCachedThreadPool();
             server = new Server(6666, executorService, serverSocket);
             executorService.execute(server);
-            TcpPeer tcpPeer = new TcpPeer(executorService);
+            TcpPeer tcpPeer = new TcpPeer(executorService, false);
             CommHandlerSimulator commHandlerSimulator = new CommHandlerSimulator(tcpPeer);
             tcpPeer.setListener(commHandlerSimulator);
-            tcpPeer.connect("", 6666);
+            tcpPeer.connect("localhost", 6666);
             try {
                 executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
                 System.out.println(executorService.toString());

@@ -5,7 +5,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.*;
 
 /**
  * Created by efytom on 2017-01-13.
@@ -18,28 +18,30 @@ public class Server implements Runnable {
     private ServerSocket server;
     private Socket appSocket;
     private Socket deviceSocket;
-    private Parser deviceParser;
-    private Parser appParser;
-
 
     private DataInputStream appInput;
     private DataOutputStream appOutput;
     private DataInputStream deviceInput;
     private DataOutputStream deviceOutput;
+    private ScheduledExecutorService scheduledExecutorService;
+
 
     public Server(int port, ExecutorService executorService, ServerSocket server) {
         this.executorService = executorService;
         this.port = port;
         this.server = server;
+        scheduledExecutorService = Executors.newScheduledThreadPool(1);
     }
 
     @Override
     public void run() {
         connectWithDevice();
         connectWithApp();
-
+        DataStream dataStream = new DataStream(deviceInput, appOutput, scheduledExecutorService);
         executorService.execute(new DataStream(appInput, deviceOutput));
-        executorService.execute(new DataStream(deviceInput, appOutput));
+        Parser parser = new Parser(dataStream);
+        executorService.execute(dataStream);
+        scheduledExecutorService.scheduleAtFixedRate(parser,500,500,TimeUnit.MILLISECONDS);
         executorService.shutdown();
     }
 
