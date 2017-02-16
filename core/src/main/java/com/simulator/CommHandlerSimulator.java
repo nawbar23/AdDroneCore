@@ -224,9 +224,6 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     startSignalPayloadSending(routeContainer);
                 }
             }
-            // TODO here handle rest of messages that can start actions (flight loop, calibrations...)
-            // TODO for example any action starts with SignalData with command - action name and parameter START
-            // TODO event.matchSignalData(new SignalData(SignalData.Command.???ACTION???, SignalData.Parameter.START)
         }
     }
 
