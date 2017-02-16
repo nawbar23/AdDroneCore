@@ -1,17 +1,13 @@
 package com.addrone;
 
 import com.multicopter.java.*;
-import com.simulator.TcpPeer;
 import jssc.*;
 
 import java.io.IOException;
 
-public class UartComm extends CommInterface implements SerialPortEventListener, CommInterface.CommInterfaceListener {
+public class UartComm extends CommInterface implements SerialPortEventListener {
 
-    private UavEvent event;
     private SerialPort serialPort;
-    private TcpPeer tcpPeer;
-
 
     @Override
     public void connect(String ipAddress, int port) {
@@ -22,23 +18,22 @@ public class UartComm extends CommInterface implements SerialPortEventListener, 
             serialPort.setFlowControlMode(SerialPort.FLOWCONTROL_RTSCTS_IN | SerialPort.FLOWCONTROL_RTSCTS_OUT);
             serialPort.addEventListener(this);
             listener.onConnected();
-            event = new UavEvent(UavEvent.Type.CONNECTED);
         } catch (SerialPortException e) {
-            System.out.print("Cannot open port: " + serialPort.getPortName() + "- try again or change open parameters\n");
-            event = new UavEvent(UavEvent.Type.ERROR);
+            System.out.print("Cannot open port: " + serialPort.getPortName() + "- try attach your device again or change open parameters\n");
         }
     }
 
     @Override
     public void disconnect() {
         try {
-            event = new UavEvent(UavEvent.Type.DISCONNECTED);
-            serialPort.closePort();
+            if (serialPort.isOpened()) {
+                System.out.println("Serial port disconnected");
+                serialPort.closePort();
+            }
             listener.onDisconnected();
         } catch (SerialPortException e) {
             System.out.println("Cannot close port: " + serialPort.getPortName() + "\n");
             listener.onError(new IOException(e.getMessage(), e.getCause()));
-            event = new UavEvent(UavEvent.Type.ERROR);
         }
     }
 
@@ -64,25 +59,5 @@ public class UartComm extends CommInterface implements SerialPortEventListener, 
             System.out.println("Receive error\n");
             listener.onError(new IOException(e.getMessage(), e.getCause()));
         }
-    }
-
-    @Override
-    public void onConnected() {
-
-    }
-
-    @Override
-    public void onDisconnected() {
-
-    }
-
-    @Override
-    public void onError(IOException e) {
-
-    }
-
-    @Override
-    public void onDataReceived(byte[] data, int dataSize) {
-
     }
 }

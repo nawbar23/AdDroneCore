@@ -1,12 +1,9 @@
 package com.addrone;
 
-import com.multicopter.java.UavEvent;
-import com.multicopter.java.UavManager;
+import com.simulator.TcpPeer;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.net.Socket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Created by ewitklu on 2017-02-07.
@@ -15,18 +12,14 @@ public class UartMain {
 
     public static void main(String[] args) {
 
-        boolean keepUartLoop = true;
-        UartComm uartComm = new UartComm();
+        ExecutorService executorService = Executors.newCachedThreadPool();
 
-        Socket socket;
-        DataOutputStream socketOutput;
-        DataInputStream socketInput;
+        UartTcpBridge bridge = new UartTcpBridge(new UartComm(), new TcpPeer(executorService, false));
 
-        uartComm.connect("", 5);
+        bridge.getUartInterface().connect("lokalhost", 5);
 
-        if (uartComm.serialPort.isOpened()) {
-            while (keepUartLoop == true) {
-            }
+        while (bridge.keepLoop == true) {
+            //keepLoop changes to state "false" if board is disconnected from serial port
         }
     }
 }

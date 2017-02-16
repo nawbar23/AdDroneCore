@@ -1,52 +1,88 @@
 package com.addrone;
 
 import com.multicopter.java.CommInterface;
-import com.simulator.TcpPeer;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
-/**
- * Created by ewitklu on 2017-02-14.
- */
-public class UartTcpBridge extends CommInterface implements CommInterface.CommInterfaceListener{
+public class UartTcpBridge {
 
-    private ExecutorService executorService = Executors.newCachedThreadPool();
-    private TcpPeer tcpPeer = new TcpPeer(executorService, false);
+    boolean keepLoop = false;
 
-    @Override
-    public void connect(String ipAddress, int port) {
-        tcpPeer.connect("localhost", 6666);
+    CommInterface uartInterface;
+    CommInterface tcpInteface;
+
+    CommInterface.CommInterfaceListener uartListener;
+    CommInterface.CommInterfaceListener tcpListener;
+
+    public UartTcpBridge(CommInterface uartInterface, CommInterface tcpInterface) {
+
+        this.uartInterface = uartInterface;
+        this.tcpInteface = tcpInterface;
+
+        uartListener = new CommInterface.CommInterfaceListener() {
+
+            @Override
+            public void onConnected() {
+                System.out.println("Uart: onConnected");
+                System.out.println("Connected to board, serial port open\n");
+                keepLoop = true;
+                tcpInterface.connect("localhost", 6666);
+            }
+
+            @Override
+            public void onDisconnected() {
+                System.out.println("Uart: onDisconnected");
+                keepLoop = false;
+            }
+
+            @Override
+            public void onError(IOException e) {
+                System.out.println("Uart: onError");
+                uartInterface.disconnect();
+                System.out.println("Unidentified error\n");
+            }
+
+            @Override
+            public void onDataReceived(byte[] data, int dataSize) {
+                tcpInterface.send(data);
+            }
+
+        };
+        uartInterface.setListener(uartListener);
+
+        tcpListener = new CommInterface.CommInterfaceListener() {
+
+            @Override
+            public void onConnected() {
+                System.out.println("TCP: onConnected");
+                System.out.println("TCP connected\n");
+            }
+
+            @Override
+            public void onDisconnected()
+            {
+                System.out.println("TCP: onDisconnected");
+                uartInterface.disconnect();
+                System.out.println("Serial port disconnected\n");
+            }
+
+            @Override
+            public void onError(IOException e) {
+                System.out.println("TCP: onError");
+                tcpInterface.disconnect();
+                System.out.println("TCP disconnected");
+            }
+
+            @Override
+            public void onDataReceived(byte[] data, int dataSize) {
+                uartInterface.send(data);
+            }
+        };
+
+        tcpInterface.setListener(tcpListener);
     }
 
-    @Override
-    public void disconnect() {
-        tcpPeer.disconnect();
-    }
-
-    @Override
-    public void send(byte[] data) {
-        tcpPeer.send(data);
-    }
-
-    @Override
-    public void onConnected() {
-        
-    }
-
-    @Override
-    public void onDisconnected() {
-
-    }
-
-    @Override
-    public void onError(IOException e) {
-
-    }
-
-    @Override
-    public void onDataReceived(byte[] data, int dataSize) {
-
+    public CommInterface getUartInterface() {
+        return uartInterface;
     }
 }
