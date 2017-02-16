@@ -462,6 +462,23 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     private ControlSettings getStartControlSettings() {
         ControlSettings result = new ControlSettings();
 
+        result.setUavType(ControlSettings.UavType.HEXACOPTER_X.getValue());
+        result.setInitialSolverMode(ControlData.SolverMode.ANGLE_NO_YAW.getValue());
+        result.setManualThrottleMode(ControlSettings.ThrottleMode.DYNAMIC.getValue());
+
+        result.setBatteryType(ControlSettings.BatteryType.BATTERY_4S.getValue());
+        result.setErrorHandlingAction(ControlData.ControllerCommand.BACK_TO_BASE.getValue());
+        result.setStickMovementMode(ControlSettings.StickMovementMode.GEOGRAPHIC.getValue());
+
+        result.setMaxRollPitchControlValue((float)Math.toRadians(35.0));
+        result.setMaxYawControlValue((float)Math.toRadians(135.0));
+
+        result.setMaxAutoLandingTime(15.0f);
+        result.setAutoLandingDescendRate(1.0f);
+
+        result.setStickPositionRateProp(5.0f);
+        result.setThrottleAltRateProp(3.5f);
+
         result.setCrc();
         return result;
     }
