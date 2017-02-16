@@ -147,6 +147,14 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
         }
     }
 
+    /**
+     * handleEventAppLoop - handles communication event received in application loop
+     * mostly those events are PING reception and it is being handle by immediate PONG response
+     * rest of events are start messages that can start actions (flight loop, calibrations...)
+     * for example any action starts with SignalData with command - action name and parameter START
+     * event.matchSignalData(new SignalData(SignalData.Command.???ACTION???, SignalData.Parameter.START)
+     * after start command reception main connection state is changed and next events are handled by proper state machine
+     */
     private void handleEventAppLoop(CommEvent event) throws Exception {
         if (event.getType() == CommEvent.EventType.MESSAGE_RECEIVED) {
             CommMessage msg = ((MessageEvent) event).getMessage();
