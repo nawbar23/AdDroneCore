@@ -35,6 +35,13 @@ public class TcpPeer extends CommInterface implements Runnable  {
         this.serverMode = serverMode;
     }
 
+    public void setIpAddress(String ipAddress) {
+        this.ipAddress = ipAddress;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
+    }
 
     private enum State {
         CONNECTING,
@@ -44,12 +51,10 @@ public class TcpPeer extends CommInterface implements Runnable  {
     }
 
     @Override
-    public void connect(String ipAddress, int port) {
+    public void connect() {
         System.out.println("TcpPeer:Connecting to "
                 + ipAddress + ":" + String.valueOf(port) + " as "
                 + (serverMode ? "server" : "client"));
-        this.ipAddress = ipAddress;
-        this.port = port;
         state = State.CONNECTING;
         executorService.execute(this);
     }

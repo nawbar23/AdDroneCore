@@ -26,7 +26,9 @@ public class AdapterMain {
             tcpPeer = new TcpPeer(executorService, true);
             commHandlerSimulator = new CommHandlerSimulator(tcpPeer);
             tcpPeer.setListener(commHandlerSimulator);
-            tcpPeer.connect("localhost", 6666);
+            tcpPeer.setIpAddress("localhost");
+            tcpPeer.setPort(6666);
+            tcpPeer.connect();
             executorService.shutdown();
             try {
                 executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);

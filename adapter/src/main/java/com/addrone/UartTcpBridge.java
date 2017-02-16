@@ -26,7 +26,7 @@ public class UartTcpBridge {
                 System.out.println("Uart: onConnected");
                 System.out.println("Connected to board, serial port open\n");
                 keepLoop = true;
-                tcpInterface.connect("localhost", 6666);
+                tcpInterface.connect();
             }
 
             @Override
@@ -84,5 +84,8 @@ public class UartTcpBridge {
 
     public CommInterface getUartInterface() {
         return uartInterface;
+    }
+    public CommInterface getTcpInteface() {
+        return tcpInteface;
     }
 }

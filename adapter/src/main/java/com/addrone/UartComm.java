@@ -7,12 +7,17 @@ import java.io.IOException;
 
 public class UartComm extends CommInterface implements SerialPortEventListener {
 
+    private String port;
     private SerialPort serialPort;
 
+    public void setPort(String port) {
+        this.port = port;
+    }
+
     @Override
-    public void connect(String ipAddress, int port) {
+    public void connect() {
         try {
-            serialPort = new SerialPort("COM" + Integer.toString(port));
+            serialPort = new SerialPort(port);
             serialPort.openPort();
             serialPort.setParams(115200, 8, 1, 0);
             serialPort.setFlowControlMode(SerialPort.FLOWCONTROL_RTSCTS_IN | SerialPort.FLOWCONTROL_RTSCTS_OUT);
