@@ -45,6 +45,9 @@ public class TcpPeer extends CommInterface implements Runnable  {
 
     @Override
     public void connect(String ipAddress, int port) {
+        System.out.println("TcpPeer:Connecting to "
+                + ipAddress + ":" + String.valueOf(port) + " as "
+                + (serverMode ? "server" : "client"));
         this.ipAddress = ipAddress;
         this.port = port;
         state = State.CONNECTING;
