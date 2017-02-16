@@ -52,7 +52,9 @@ public class ServerMain {
             TcpPeer tcpPeer = new TcpPeer(executorService, false);
             CommHandlerSimulator commHandlerSimulator = new CommHandlerSimulator(tcpPeer);
             tcpPeer.setListener(commHandlerSimulator);
-            tcpPeer.connect("localhost", 6666);
+            tcpPeer.setIpAddress("localhost");
+            tcpPeer.setPort(6666);
+            tcpPeer.connect();
             try {
                 executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
                 System.out.println(executorService.toString());
