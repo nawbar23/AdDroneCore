@@ -24,9 +24,10 @@ public class UartMain {
 
         uartComm.connect("", 5);
 
-        if (uartComm.serialPort.isOpened()) {
-            while (keepUartLoop == true) {
-            }
-        }
+        // TODO compilation fix
+//        if (uartComm.serialPort.isOpened()) {
+//            while (keepUartLoop == true) {
+//            }
+//        }
     }
 }
