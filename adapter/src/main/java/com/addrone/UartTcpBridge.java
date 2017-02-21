@@ -75,7 +75,9 @@ public class UartTcpBridge {
 
             @Override
             public void onDataReceived(byte[] data, int dataSize) {
-                uartInterface.send(data);
+                byte[] tempData = new byte[dataSize];
+                System.arraycopy(data,0,tempData,0,dataSize);
+                uartInterface.send(tempData);
             }
         };
 
