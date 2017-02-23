@@ -168,6 +168,8 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     System.out.println("Disconnect message received, leaving app loop and disconnecting");
                     debugTask.stop();
                     send(new SignalData(SignalData.Command.APP_LOOP, SignalData.Parameter.BREAK_ACK).getMessage());
+                    // wait for message to be delivered to application
+                    Thread.sleep(500);
                     commInterface.disconnect();
 
                 } else if(event.matchSignalData(new SignalData(SignalData.Command.FLIGHT_LOOP, SignalData.Parameter.START))) {
