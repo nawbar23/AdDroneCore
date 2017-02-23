@@ -76,7 +76,7 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
     @Override
     public void handleCommEvent(CommEvent event) {
         try {
-            System.out.println("CommHandlerSimulator : handling event : " + event.toString() + " @ " + state.toString());
+            //System.out.println("CommHandlerSimulator : handling event : " + event.toString() + " @ " + state.toString());
             switch (state) {
                 case CONNECTING_APP_LOOP:
                     handleEventConnectingAppLoop(event);
@@ -275,9 +275,8 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                             break;
 
                         case CONTROL:
-                            System.out.println("ControlData received");
+                            //System.out.println("Control data received: " + controlData);
                             ControlData controlData = new ControlData(message);
-                            System.out.println(controlData.toString());
                             updateDebugData(controlData);
                             if (controlData.getCommand() == ControlData.ControllerCommand.STOP) {
                                 System.out.println("Stop command received, leaving flight loop");
@@ -609,8 +608,8 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
         protected void task() {
             simulateSensors();
             DebugData debugData = getDebugDataToSend();
-            System.out.println("Debug: " + debugData.toString());
             send(debugData.getMessage());
+            //System.out.println("Debug: " + debugData.toString());
         }
     };
 }
