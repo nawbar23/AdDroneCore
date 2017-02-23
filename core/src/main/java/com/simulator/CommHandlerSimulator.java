@@ -315,9 +315,7 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     magnetometerState = MagnetometerStage.CALIBRATION_ACK;
                 } else {
                     System.out.println("Calibration failed");
-                    state = State.APP_LOOP;
-                    send(new SignalData(SignalData.Command.CALIBRATE_MAGNET, SignalData.Parameter.FAIL).getMessage());
-                    debugTask.start();
+                    throw new Exception("Bad command received in magnetometer calibration");
                 }
                 break;
 
