@@ -99,6 +99,7 @@ public class TcpPeer extends CommInterface implements Runnable  {
                 int len = inputStream.available();
                 if (len > 1024) len = 1024;
                 int dataSize = inputStream.read(buffer, 0, len);
+                System.out.println("DataSize: " + dataSize);
                 listener.onDataReceived(buffer, dataSize);
                 try {
                     Thread.sleep(1);
