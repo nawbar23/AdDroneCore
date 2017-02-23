@@ -1,6 +1,7 @@
 package com.addrone;
 
 import com.multicopter.java.*;
+import com.multicopter.java.actions.CommHandlerAction;
 import jssc.*;
 
 import java.io.IOException;
@@ -44,7 +45,8 @@ public class UartComm extends CommInterface implements SerialPortEventListener {
 
     @Override
     public void send(byte[] data) {
-        System.out.println("UartComm: " + CommMessage.byteArrayToHexString(data));
+        if(data.length!=0)
+        System.out.println("Uart Sending: 0x" + CommMessage.byteArrayToHexString(data));
         try {
             serialPort.writeBytes(data);
         } catch (SerialPortException e) {

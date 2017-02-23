@@ -1,5 +1,6 @@
 package com.addrone;
 
+import com.multicopter.java.CommMessage;
 import com.simulator.TcpPeer;
 
 import java.util.concurrent.ExecutorService;
@@ -11,6 +12,12 @@ import java.util.concurrent.Executors;
 public class UartMain {
 
     public static void main(String[] args) {
+
+//        Runtime.getRuntime().addShutdownHook(new Thread() {
+//            public void run() {
+//                System.out.println("Running Shutdown Hook");
+//            }
+//        });
 
         ExecutorService executorService = Executors.newCachedThreadPool();
 
@@ -25,8 +32,16 @@ public class UartMain {
 
         uart.connect();
 
-        while (bridge.keepLoop == true) {
-            //keepLoop changes to state "false" if board is disconnected from serial port
+        while (bridge.keepLoop == false) {
+            try
+            {
+                Thread.sleep(100);
+            }
+            catch(InterruptedException e)
+            {
+                System.out.println("Thread exception, leave transmission loop");
+                bridge.keepLoop = false;
+            }
         }
     }
 }

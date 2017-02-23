@@ -77,6 +77,6 @@ public class ServerMain {
     }
 
     public static void main(String[] args) {
-        ServerMain serverMain = new ServerMain(ServerMode.ADAPTER);
+        ServerMain serverMain = new ServerMain(ServerMode.BRIDGE);
     }
 }
