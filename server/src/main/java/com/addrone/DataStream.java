@@ -54,6 +54,7 @@ public class DataStream implements Runnable {
                 if(len > 0){
                     dataReceived = true;
                 }
+
                 if (len > 1024) len = 1024;
                 if(len > 0) {
                     int read = input.read(byteArray, 0, len);

@@ -1,13 +1,19 @@
 package com.addrone;
 
+import com.multicopter.java.CommHandler;
 import com.multicopter.java.CommInterface;
+import com.multicopter.java.CommMessage;
+import com.multicopter.java.actions.CommHandlerAction;
+import com.multicopter.java.data.DebugData;
+import com.multicopter.java.data.SignalData;
 
+import java.io.DataInput;
 import java.io.IOException;
 import java.util.Arrays;
 
 public class UartTcpBridge {
 
-    boolean keepLoop = false;
+    boolean keepLoop = true;
 
     CommInterface uartInterface;
     CommInterface tcpInteface;
@@ -24,16 +30,15 @@ public class UartTcpBridge {
 
             @Override
             public void onConnected() {
-                System.out.println("Uart: onConnected");
-                System.out.println("Connected to board, serial port open\n");
-                keepLoop = true;
+                System.out.println("Connected to board, serial port opened\n");
+                keepLoop = false;
                 tcpInterface.connect();
             }
 
             @Override
             public void onDisconnected() {
-                System.out.println("Uart: onDisconnected");
-                keepLoop = false;
+                System.out.println("Disconnected from board");
+                keepLoop = true;
             }
 
             @Override
@@ -45,9 +50,12 @@ public class UartTcpBridge {
 
             @Override
             public void onDataReceived(byte[] data, int dataSize) {
-                tcpInterface.send(data);
+                byte[] tempData = new byte[dataSize];
+                System.arraycopy(data,0,tempData,0,dataSize);
+                tcpInterface.send(tempData);
+//                if(CommMessage.byteArrayToHexString(data) == CommHandlerAction.ActionType.DISCONNECT.toString())
+//                    tcpInterface.disconnect();
             }
-
         };
         uartInterface.setListener(uartListener);
 
@@ -55,41 +63,30 @@ public class UartTcpBridge {
 
             @Override
             public void onConnected() {
-                System.out.println("TCP: onConnected");
-                System.out.println("TCP connected\n");
+                System.out.println("TCP Connected");
             }
 
             @Override
             public void onDisconnected()
             {
-                System.out.println("TCP: onDisconnected");
+                System.out.println("TCP Disconnected");
                 uartInterface.disconnect();
-                System.out.println("Serial port disconnected\n");
             }
 
             @Override
             public void onError(IOException e) {
                 System.out.println("TCP: onError");
                 tcpInterface.disconnect();
-                System.out.println("TCP disconnected");
             }
 
             @Override
             public void onDataReceived(byte[] data, int dataSize) {
-                System.out.println("aaaa");
-                byte[] dst = new byte[dataSize];
-                System.arraycopy(data, 0, dst, 0, dataSize);
-                uartInterface.send(data);
+                byte[] tempData = new byte[dataSize];
+                System.arraycopy(data,0,tempData,0,dataSize);
+                uartInterface.send(tempData);
             }
         };
 
         tcpInterface.setListener(tcpListener);
-    }
-
-    public CommInterface getUartInterface() {
-        return uartInterface;
-    }
-    public CommInterface getTcpInteface() {
-        return tcpInteface;
     }
 }

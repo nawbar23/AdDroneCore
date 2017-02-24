@@ -37,6 +37,7 @@ public class AdapterMain {
                 e.printStackTrace();
                 break;
             }
+            System.out.println("\n\n");
         }
     }
 
