@@ -23,7 +23,7 @@ public class AdapterMain {
     public void start(){
         while(true) {
             executorService = Executors.newCachedThreadPool();
-            tcpPeer = new TcpPeer(executorService, true);
+            tcpPeer = new TcpPeer(executorService, false);
             commHandlerSimulator = new CommHandlerSimulator(tcpPeer);
             tcpPeer.setListener(commHandlerSimulator);
             tcpPeer.setIpAddress("localhost");

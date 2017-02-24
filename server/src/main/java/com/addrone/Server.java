@@ -50,10 +50,10 @@ public class Server implements Runnable {
             appSocket = server.accept();
             appOutput = new DataOutputStream(appSocket.getOutputStream());
             appInput = new DataInputStream(appSocket.getInputStream());
+            System.out.println("App connected");
         } catch (IOException e) {
             e.printStackTrace();
         }
-
     }
 
     private void connectWithDevice() {
@@ -61,6 +61,7 @@ public class Server implements Runnable {
             deviceSocket = server.accept();
             deviceInput = new DataInputStream(deviceSocket.getInputStream());
             deviceOutput = new DataOutputStream(deviceSocket.getOutputStream());
+            System.out.println("Device connected");
         } catch (IOException e) {
             e.printStackTrace();
         }

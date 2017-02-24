@@ -15,7 +15,7 @@ public class UartMain {
         ExecutorService executorService = Executors.newCachedThreadPool();
 
         UartComm uart = new UartComm();
-        uart.setPort("COM5");
+        uart.setPort("COM4");
 
         TcpPeer tcpPeer = new TcpPeer(executorService, false);
         tcpPeer.setIpAddress("localhost");
@@ -24,6 +24,7 @@ public class UartMain {
         UartTcpBridge bridge = new UartTcpBridge(uart, tcpPeer);
 
         uart.connect();
+
 
         while (bridge.keepLoop == true) {
             //keepLoop changes to state "false" if board is disconnected from serial port

@@ -5,6 +5,10 @@ import com.multicopter.java.CommMessage;
 import com.multicopter.java.data.DebugData;
 import com.multicopter.java.events.CommEvent;
 import com.multicopter.java.events.MessageEvent;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
+import org.hibernate.cfg.Configuration;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -18,8 +22,10 @@ public class Parser implements Runnable, CommDispatcher.CommDispatcherListener {
     private int len;
     private DataStream dataStream;
     private Logger logger = Logger.getLogger(Parser.class.getName());
+    private Session session;
 
     public Parser(DataStream dataStream) {
+        //session = ServerMain.sessionFactory.openSession();
         this.dataStream = dataStream;
         dispatcher = new CommDispatcher(this);
     }
@@ -38,6 +44,11 @@ public class Parser implements Runnable, CommDispatcher.CommDispatcherListener {
                 CommMessage message = ((MessageEvent) event).getMessage();
                 DebugData debugData = new DebugData(message);
                 logger.info(debugData.toString());
+                // todo: create mapping
+//                Transaction transaction = session.beginTransaction();
+//                session.save(debugData);
+//                transaction.commit();
+//                session.close();
             } catch (Exception e) {
                 e.printStackTrace();
             }

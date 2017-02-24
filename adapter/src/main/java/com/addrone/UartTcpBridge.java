@@ -3,6 +3,7 @@ package com.addrone;
 import com.multicopter.java.CommInterface;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 public class UartTcpBridge {
 
@@ -75,6 +76,9 @@ public class UartTcpBridge {
 
             @Override
             public void onDataReceived(byte[] data, int dataSize) {
+                System.out.println("aaaa");
+                byte[] dst = new byte[dataSize];
+                System.arraycopy(data, 0, dst, 0, dataSize);
                 uartInterface.send(data);
             }
         };

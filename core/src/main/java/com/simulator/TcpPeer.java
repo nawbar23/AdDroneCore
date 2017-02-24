@@ -98,8 +98,10 @@ public class TcpPeer extends CommInterface implements Runnable  {
             while (state != State.DISCONNECTING) {
                 int len = inputStream.available();
                 if (len > 1024) len = 1024;
-                int dataSize = inputStream.read(buffer, 0, len);
-                listener.onDataReceived(buffer, dataSize);
+                if(len > 0) {
+                    int dataSize = inputStream.read(buffer, 0, len);
+                    listener.onDataReceived(buffer, dataSize);
+                }
                 try {
                     Thread.sleep(1);
                 } catch (InterruptedException e) {

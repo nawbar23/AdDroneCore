@@ -1,5 +1,7 @@
 package com.addrone;
 
+import com.multicopter.java.CommMessage;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -17,7 +19,7 @@ public class DataStream implements Runnable {
     private DataInputStream input;
     private DataOutputStream output;
     private boolean dataReceived;
-    private byte[] byteArray;
+    private byte[] parserData;
     private ReentrantLock reentrantLock;
     private ScheduledExecutorService scheduledExecutorService;
 
@@ -36,14 +38,14 @@ public class DataStream implements Runnable {
 
     public byte[] sendToParser(){
         reentrantLock.lock();
-        byte[] bytesArrays = byteArray;
+        byte[] bytesArrays = parserData;
         reentrantLock.unlock();
         return bytesArrays;
     }
 
     @Override
     public void run() {
-        byteArray = new byte[1024];
+        byte[] byteArray = new byte[1024];
         byte[] bytes = new byte[1024];
         Arrays.fill(bytes, (byte) 1);
         while(true) {
@@ -53,8 +55,11 @@ public class DataStream implements Runnable {
                     dataReceived = true;
                 }
                 if (len > 1024) len = 1024;
-                int read = input.read(byteArray, 0, len);
-                output.write(byteArray, 0, read);
+                if(len > 0) {
+                    int read = input.read(byteArray, 0, len);
+                    output.write(byteArray, 0, read);
+                    parserData = byteArray;
+                }
                 if(Arrays.equals(byteArray, bytes) && dataReceived){
                     input.close();
                     output.close();

@@ -3,6 +3,8 @@ package com.addrone;
 
 import com.simulator.CommHandlerSimulator;
 import com.simulator.TcpPeer;
+import org.hibernate.SessionFactory;
+import org.hibernate.cfg.Configuration;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -17,12 +19,14 @@ public class ServerMain {
 
     private ExecutorService executorService;
     private Server server;
+    public static SessionFactory sessionFactory;
 
     private enum ServerMode {
         BRIDGE,ADAPTER
     }
 
     public ServerMain(ServerMode serverMode){
+//        sessionFactory = new Configuration().configure().buildSessionFactory();
         if(serverMode == ServerMode.ADAPTER){
             startAdapter();
         }
@@ -71,12 +75,14 @@ public class ServerMain {
             ServerSocket serverSocket = new ServerSocket(6666);
             server = new Server(6666, executorService, serverSocket);
             executorService.execute(server);
+            System.out.println(serverSocket.getInetAddress());
+            System.out.println(serverSocket.getLocalPort());
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     public static void main(String[] args) {
-        ServerMain serverMain = new ServerMain(ServerMode.ADAPTER);
+        ServerMain serverMain = new ServerMain(ServerMode.BRIDGE);
     }
 }
