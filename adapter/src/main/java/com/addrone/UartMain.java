@@ -15,6 +15,11 @@ public class UartMain {
         if (args.length > 0 && args[0] != null) {
             port = args[0];
         }
+        
+        String serverAddress = "localhost";
+        if (args.length > 1 && args[1] != null) {
+            port = args[1];
+        }
 
         ExecutorService executorService = Executors.newCachedThreadPool();
 
@@ -22,7 +27,7 @@ public class UartMain {
         uart.setPort(port);
 
         TcpPeer tcpPeer = new TcpPeer(executorService, false);
-        tcpPeer.setIpAddress("localhost");
+        tcpPeer.setIpAddress(serverAddress);
         tcpPeer.setPort(6666);
 
         UartTcpBridge bridge = new UartTcpBridge(uart, tcpPeer);
