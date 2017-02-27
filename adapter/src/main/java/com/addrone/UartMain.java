@@ -1,6 +1,5 @@
 package com.addrone;
 
-import com.multicopter.java.CommMessage;
 import com.simulator.TcpPeer;
 
 import java.util.concurrent.ExecutorService;
@@ -12,17 +11,15 @@ import java.util.concurrent.Executors;
 public class UartMain {
 
     public static void main(String[] args) {
-
-//        Runtime.getRuntime().addShutdownHook(new Thread() {
-//            public void run() {
-//                System.out.println("Running Shutdown Hook");
-//            }
-//        });
+        String port = "COM4";
+        if (args.length > 0 && args[0] != null) {
+            port = args[0];
+        }
 
         ExecutorService executorService = Executors.newCachedThreadPool();
 
         UartComm uart = new UartComm();
-        uart.setPort("COM4");
+        uart.setPort(port);
 
         TcpPeer tcpPeer = new TcpPeer(executorService, false);
         tcpPeer.setIpAddress("localhost");

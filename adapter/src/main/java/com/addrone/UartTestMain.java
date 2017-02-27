@@ -46,6 +46,7 @@ public class UartTestMain implements UavManager.UavManagerListener,
         }
 
         System.out.println("Test done successfully!\n\n");
+        System.exit(0);
     }
 
     @Override
