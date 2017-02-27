@@ -224,8 +224,14 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     debugTask.stop();
                     send(new SignalData(SignalData.Command.DOWNLOAD_ROUTE, SignalData.Parameter.ACK).getMessage());
                     startSignalPayloadSending(routeContainer);
+                } else {
+                    throw new Exception("Unexpected SignalData received in app loop: " + signalMsg);
                 }
+            } else {
+                throw new Exception("Unexpected message received in app loop: " + msg);
             }
+        } else {
+            throw new Exception("Unexpected event received in app loop: " + event);
         }
     }
 
