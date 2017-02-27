@@ -3,8 +3,6 @@ package com.addrone;
 
 import com.simulator.CommHandlerSimulator;
 import com.simulator.TcpPeer;
-import org.hibernate.SessionFactory;
-import org.hibernate.cfg.Configuration;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -19,14 +17,12 @@ public class ServerMain {
 
     private ExecutorService executorService;
     private Server server;
-    public static SessionFactory sessionFactory;
 
     private enum ServerMode {
         BRIDGE,ADAPTER
     }
 
     public ServerMain(ServerMode serverMode){
-//        sessionFactory = new Configuration().configure().buildSessionFactory();
         if(serverMode == ServerMode.ADAPTER){
             startAdapter();
         }
@@ -49,7 +45,7 @@ public class ServerMain {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            System.out.println("Starting server with adapter mode");
+            System.out.println("Starting server as simulator");
             executorService = Executors.newCachedThreadPool();
             server = new Server(6666, executorService, serverSocket);
             executorService.execute(server);
@@ -72,6 +68,7 @@ public class ServerMain {
 
     private void startServer() {
         try {
+            System.out.println("Starting server as bridge!");
             ServerSocket serverSocket = new ServerSocket(6666);
             server = new Server(6666, executorService, serverSocket);
             executorService.execute(server);
