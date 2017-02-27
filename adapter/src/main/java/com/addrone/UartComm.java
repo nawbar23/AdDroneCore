@@ -19,7 +19,6 @@ public class UartComm extends CommInterface implements SerialPortEventListener {
     public void connect() {
         try {
             serialPort = new SerialPort(port);
-            
             serialPort.openPort();
             serialPort.setParams(230400, 8, 1, 0);
             serialPort.setFlowControlMode(SerialPort.FLOWCONTROL_RTSCTS_IN | SerialPort.FLOWCONTROL_RTSCTS_OUT);

@@ -11,23 +11,23 @@ import java.util.TimerTask;
  * Created by ebarnaw on 2016-12-13.
  */
 public class UartTestMain implements UavManager.UavManagerListener,
-    UavManager.ControlDataSource {
+        UavManager.ControlDataSource {
 
     private static final long TIME_BEFORE_FLIGHT = 3000; // [ms]
     private static final long TIME_IN_FLIGHT = 5000; // [ms]
     private static final long TIME_BEFORE_DISCONNECT = 2000; // [ms]
 
-    public UartTestMain(){
-        start();
+    public UartTestMain(String portName){
+        start(portName);
     }
 
     private UavManager uavManager;
 
     private boolean keepConnection;
 
-    public void start(){
+    public void start(String portName){
         UartComm uart = new UartComm();
-        uart.setPort("COM4");
+        uart.setPort(portName);
 
         keepConnection = true;
 
@@ -129,6 +129,10 @@ public class UartTestMain implements UavManager.UavManagerListener,
     }
 
     public static void main(String[] args) {
-        UartTestMain uartTestMain = new UartTestMain();
+        String port = "COM4";
+        if (args.length > 0 && args[0] != null) {
+            port = args[0];
+        }
+        UartTestMain uartTestMain = new UartTestMain(port);
     }
 }
