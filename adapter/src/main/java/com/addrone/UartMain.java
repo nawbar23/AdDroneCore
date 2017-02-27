@@ -18,7 +18,7 @@ public class UartMain {
 
         String serverAddress = "localhost";
         if (args.length > 1 && args[1] != null) {
-            port = args[1];
+            serverAddress = args[1];
         }
 
         ExecutorService executorService = Executors.newCachedThreadPool();
