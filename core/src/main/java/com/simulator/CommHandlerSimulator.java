@@ -164,7 +164,8 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     System.out.println("Ping message received, responding with pong");
                     send(new SignalData(SignalData.Command.PING_VALUE, signalMsg.getParameterValue()).getMessage());
 
-                } else if (event.matchSignalData(new SignalData(SignalData.Command.APP_LOOP, SignalData.Parameter.BREAK))) {
+                } else if (event.matchSignalData(new SignalData(
+                        SignalData.Command.APP_LOOP, SignalData.Parameter.BREAK))) {
                     System.out.println("Disconnect message received, leaving app loop and disconnecting");
                     debugTask.stop();
                     send(new SignalData(SignalData.Command.APP_LOOP, SignalData.Parameter.BREAK_ACK).getMessage());
@@ -172,7 +173,8 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     Thread.sleep(500);
                     commInterface.disconnect();
 
-                } else if(event.matchSignalData(new SignalData(SignalData.Command.FLIGHT_LOOP, SignalData.Parameter.START))) {
+                } else if(event.matchSignalData(new SignalData(
+                        SignalData.Command.FLIGHT_LOOP, SignalData.Parameter.START))) {
                     System.out.println("FlightLoop initiated");
                     debugTask.stop();
                     state = State.FLIGHT_LOOP;
@@ -180,7 +182,8 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     send(new SignalData(SignalData.Command.FLIGHT_LOOP, SignalData.Parameter.ACK).getMessage());
                     startSignalPayloadSending(controlSettings);
 
-                } else if (event.matchSignalData(new SignalData(SignalData.Command.CALIBRATE_ACCEL, SignalData.Parameter.START))){
+                } else if (event.matchSignalData(new SignalData(
+                        SignalData.Command.CALIBRATE_ACCEL, SignalData.Parameter.START))){
                     System.out.println("Starting accelerometer calibration procedure");
                     debugTask.stop();
                     state = State.CALIBRATE_ACCEL;
@@ -190,40 +193,51 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     send(new SignalData(SignalData.Command.CALIBRATE_ACCEL, SignalData.Parameter.DONE).getMessage());
                     startSignalPayloadSending(calibrationSettings);
 
-                } else if (event.matchSignalData(new SignalData(SignalData.Command.CALIBRATE_MAGNET, SignalData.Parameter.START))){
+                } else if (event.matchSignalData(new SignalData(
+                        SignalData.Command.CALIBRATE_MAGNET, SignalData.Parameter.START))){
                     System.out.println("Starting magnetometer calibration procedure");
                     debugTask.stop();
                     state = State.CALIBRATE_MAGNET;
                     magnetometerState = MagnetometerStage.USER_COMMAND;
                     send(new SignalData(SignalData.Command.CALIBRATE_MAGNET, SignalData.Parameter.ACK).getMessage());
 
-                } else if(event.matchSignalData(new SignalData(SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.START))){
+                } else if (event.matchSignalData(new SignalData(
+                        SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.START))){
                     System.out.println("Uploading ControlSettings");
                     uploadFails = 0;
                     state = State.UPLOAD_CONTROL_SETTINGS;
                     debugTask.stop();
                     send(new SignalData(SignalData.Command.UPLOAD_SETTINGS, SignalData.Parameter.ACK).getMessage());
 
-                } else if(event.matchSignalData(new SignalData(SignalData.Command.DOWNLOAD_SETTINGS, SignalData.Parameter.START))){
+                } else if (event.matchSignalData(new SignalData(
+                        SignalData.Command.DOWNLOAD_SETTINGS, SignalData.Parameter.START))){
                     System.out.println("ControlSettings download, sending to client");
                     state = State.DOWNLOAD_CONTROL_SETTINGS;
                     debugTask.stop();
                     send(new SignalData(SignalData.Command.DOWNLOAD_SETTINGS, SignalData.Parameter.ACK).getMessage());
                     startSignalPayloadSending(controlSettings);
 
-                } else if(event.matchSignalData(new SignalData(SignalData.Command.UPLOAD_ROUTE, SignalData.Parameter.START))){
+                } else if (event.matchSignalData(new SignalData(
+                        SignalData.Command.UPLOAD_ROUTE, SignalData.Parameter.START))){
                     System.out.println("Starting RouteContainer upload procedure");
                     uploadRouteFails = 0;
                     state = State.UPLOAD_ROUTE_CONTAINER;
                     debugTask.stop();
                     send(new SignalData(SignalData.Command.UPLOAD_ROUTE, SignalData.Parameter.ACK).getMessage());
 
-                } else if(event.matchSignalData(new SignalData(SignalData.Command.DOWNLOAD_ROUTE, SignalData.Parameter.START))){
+                } else if (event.matchSignalData(new SignalData(
+                        SignalData.Command.DOWNLOAD_ROUTE, SignalData.Parameter.START))) {
                     System.out.println("RouteContainer download, sending to client");
                     state = State.DOWNLOAD_ROUTE_CONTAINER;
                     debugTask.stop();
                     send(new SignalData(SignalData.Command.DOWNLOAD_ROUTE, SignalData.Parameter.ACK).getMessage());
                     startSignalPayloadSending(routeContainer);
+
+                } else if ((event.matchSignalData(new SignalData(
+                        SignalData.Command.SOFTWARE_UPGRADE, SignalData.Parameter.START)))) {
+                    System.out.println("Trying upgrade, not available in simulator mode!");
+                    send(new SignalData(SignalData.Command.SOFTWARE_UPGRADE, SignalData.Parameter.NOT_ALLOWED).getMessage());
+
                 } else {
                     throw new Exception("Unexpected SignalData received in app loop: " + signalMsg);
                 }
