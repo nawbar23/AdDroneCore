@@ -238,6 +238,14 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     System.out.println("Trying upgrade, not available in simulator mode!");
                     send(new SignalData(SignalData.Command.SOFTWARE_UPGRADE, SignalData.Parameter.NOT_ALLOWED).getMessage());
 
+                } else if ((event.matchSignalData(new SignalData(
+                        SignalData.Command.SYSTEM_RESET, SignalData.Parameter.START)))) {
+                    System.out.println("Connection broken, rest simulator!");
+                    debugTask.stop();
+                    send(new SignalData(SignalData.Command.SYSTEM_RESET, SignalData.Parameter.ACK).getMessage());
+                    Thread.sleep(200);
+                    commInterface.disconnect();
+
                 } else {
                     throw new Exception("Unexpected SignalData received in app loop: " + signalMsg);
                 }
