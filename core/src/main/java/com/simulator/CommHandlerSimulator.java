@@ -127,12 +127,20 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     startSignalPayloadSending(calibrationSettings);
                     connectionStage = ConnectionStage.CALIBRATION_ACK;
                 }
+                else
+                {
+                    throw new Exception("Unexpected message received");
+                }
                 break;
 
             case CALIBRATION_ACK:
                 if (handleSignalPayloadAck(calibrationSettings, event)) {
                     System.out.println("Calibration procedure done successfully, waiting for final command");
                     connectionStage = ConnectionStage.FINAL_COMMAND;
+                }
+                else
+                {
+                    throw new Exception("Unexpected message received");
                 }
                 break;
 
@@ -142,6 +150,10 @@ public class CommHandlerSimulator implements CommInterface.CommInterfaceListener
                     state = State.APP_LOOP;
                     send(new SignalData(SignalData.Command.APP_LOOP, SignalData.Parameter.ACK).getMessage());
                     debugTask.start();
+                }
+                else
+                {
+                    throw new Exception("Unexpected message received");
                 }
                 break;
         }
