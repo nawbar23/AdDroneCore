@@ -1,7 +1,7 @@
 package com.addrone;
 
-import com.simulator.CommHandlerSimulator;
 import com.simulator.TcpPeer;
+import com.multicopter.java.UavSimulator;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -14,7 +14,7 @@ public class AdapterMain {
 
     private ExecutorService executorService;
     private TcpPeer tcpPeer;
-    private CommHandlerSimulator commHandlerSimulator;
+    private UavSimulator uavSimulator;
 
     public AdapterMain(){
         start();
@@ -24,8 +24,8 @@ public class AdapterMain {
         while(true) {
             executorService = Executors.newCachedThreadPool();
             tcpPeer = new TcpPeer(executorService, true);
-            commHandlerSimulator = new CommHandlerSimulator(tcpPeer);
-            tcpPeer.setListener(commHandlerSimulator);
+            uavSimulator = new UavSimulator(tcpPeer);
+            tcpPeer.setListener(uavSimulator);
             tcpPeer.setIpAddress("localhost");
             tcpPeer.setPort(6666);
             tcpPeer.connect();
