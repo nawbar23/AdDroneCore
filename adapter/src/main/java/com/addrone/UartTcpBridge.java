@@ -1,15 +1,8 @@
 package com.addrone;
 
-import com.multicopter.java.CommHandler;
-import com.multicopter.java.CommInterface;
-import com.multicopter.java.CommMessage;
-import com.multicopter.java.actions.CommHandlerAction;
-import com.multicopter.java.data.DebugData;
-import com.multicopter.java.data.SignalData;
+import com.skydive.java.CommInterface;
 
-import java.io.DataInput;
 import java.io.IOException;
-import java.util.Arrays;
 
 public class UartTcpBridge {
 

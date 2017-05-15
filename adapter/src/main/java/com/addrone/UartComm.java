@@ -1,7 +1,7 @@
 package com.addrone;
 
-import com.multicopter.java.*;
-import com.multicopter.java.actions.CommHandlerAction;
+import com.skydive.java.CommInterface;
+import com.skydive.java.CommMessage;
 import jssc.*;
 
 import java.io.IOException;

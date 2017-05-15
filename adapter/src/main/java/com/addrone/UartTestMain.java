@@ -1,8 +1,8 @@
 package com.addrone;
 
-import com.multicopter.java.UavEvent;
-import com.multicopter.java.UavManager;
-import com.multicopter.java.data.ControlData;
+import com.skydive.java.UavEvent;
+import com.skydive.java.UavManager;
+import com.skydive.java.data.ControlData;
 
 import java.util.Timer;
 import java.util.TimerTask;

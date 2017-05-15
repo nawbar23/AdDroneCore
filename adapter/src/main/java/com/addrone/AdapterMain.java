@@ -1,7 +1,7 @@
 package com.addrone;
 
 import com.simulator.TcpPeer;
-import com.multicopter.java.UavSimulator;
+import com.skydive.java.UavSimulator;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

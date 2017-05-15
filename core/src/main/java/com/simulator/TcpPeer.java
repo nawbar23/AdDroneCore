@@ -1,6 +1,6 @@
 package com.simulator;
 
-import com.multicopter.java.CommInterface;
+import com.skydive.java.CommInterface;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;

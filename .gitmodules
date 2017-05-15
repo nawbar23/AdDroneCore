@@ -1,3 +1,6 @@
 [submodule "core/src/main/java/com/multicopter"]
 	path = core/src/main/java/com/multicopter
 	url = https://github.com/nawbar23/multicopter.git
+[submodule "core/src/main/java/com/skydive"]
+	path = core/src/main/java/com/skydive
+	url = https://github.com/skydiveuavs/skydive.git
