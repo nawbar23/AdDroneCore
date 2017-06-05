@@ -69,6 +69,7 @@ public class TcpPeer extends CommInterface implements Runnable  {
         try {
             //System.out.println("Sending: 0x" + CommMessage.byteArrayToHexString(data));
             outputStream.write(data, 0, data.length);
+            outputStream.flush();
         } catch (IOException e) {
             System.out.println("Error while sending: " + e.getMessage());
             disconnect();
