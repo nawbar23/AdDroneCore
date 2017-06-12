@@ -82,6 +82,13 @@ public class TcpPeer extends CommInterface implements Runnable  {
         try {
             if (serverMode) {
                 serverSocket = new ServerSocket(port);
+                Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                    try {
+                        serverSocket.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }));
                 System.out.println("Server started, waiting for connection");
                 socket = serverSocket.accept();
             } else {
