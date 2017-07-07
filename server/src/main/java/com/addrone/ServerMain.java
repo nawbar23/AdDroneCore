@@ -18,7 +18,7 @@ public class ServerMain {
     private Server server;
 
     private enum ServerMode {
-        BRIDGE,ADAPTER
+        BRIDGE,BRIDGE_V2,ADAPTER
     }
 
     public ServerMain(ServerMode serverMode){
@@ -79,6 +79,11 @@ public class ServerMain {
     }
 
     public static void main(String[] args) {
-        ServerMain serverMain = new ServerMain(ServerMode.BRIDGE);
+        //ServerMain serverMain = new ServerMain(ServerMode.BRIDGE);
+        try {
+            new ServerBridge().run();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
     }
 }
