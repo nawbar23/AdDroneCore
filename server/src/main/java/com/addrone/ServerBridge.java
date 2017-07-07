@@ -5,10 +5,10 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by nawba on 07.07.2017.
@@ -18,14 +18,11 @@ public class ServerBridge {
     private static final int SERVER_PORT = 9999;
 
     private ExecutorService executorService;
-
-    private ReentrantLock reentrantLock;
     private List<ServerClient> clients;
 
     public ServerBridge() {
         executorService = Executors.newCachedThreadPool();
-        reentrantLock = new ReentrantLock();
-        clients = Collections.synchronizedList(new ArrayList<>());
+        clients = Collections.synchronizedList(new LinkedList<>());
     }
 
     public void run() throws IOException {
@@ -45,18 +42,21 @@ public class ServerBridge {
         }
     }
 
-    public synchronized void broadcast(byte b[], int off, int len) {
+    public void broadcast(byte b[], int off, int len) {
         System.out.println("ServerBridge:broadcast size: " + String.valueOf(len) +
                 " to " + String.valueOf(clients.size()) + " clients");
+        ArrayList<ServerClient> toRemove = new ArrayList<>();
         for (ServerClient c : clients) {
-            System.out.println("aaa");
             try {
                 c.send(b, off, len);
             } catch (IOException e) {
-                clients.remove(c);
-                c.disconnect();
                 System.out.println("Failed broadcast data to one of clients, shouting down connection to this guy");
+                toRemove.add(c);
             }
+        }
+        for (ServerClient c : toRemove) {
+            clients.remove(c);
+            c.disconnect();
         }
     }
 }
