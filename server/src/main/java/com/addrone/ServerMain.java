@@ -1,8 +1,7 @@
 package com.addrone;
 
-
-import com.simulator.CommHandlerSimulator;
 import com.simulator.TcpPeer;
+import com.skydive.java.UavSimulator;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -50,7 +49,7 @@ public class ServerMain {
             server = new Server(6666, executorService, serverSocket);
             executorService.execute(server);
             TcpPeer tcpPeer = new TcpPeer(executorService, false);
-            CommHandlerSimulator commHandlerSimulator = new CommHandlerSimulator(tcpPeer);
+            UavSimulator commHandlerSimulator = new UavSimulator(tcpPeer);
             tcpPeer.setListener(commHandlerSimulator);
             tcpPeer.setIpAddress("localhost");
             tcpPeer.setPort(6666);

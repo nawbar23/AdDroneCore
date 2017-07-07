@@ -1,7 +1,7 @@
 package com.addrone;
 
-import com.multicopter.java.CommDispatcher;
-import com.multicopter.java.events.CommEvent;
+import com.skydive.java.CommDispatcher;
+import com.skydive.java.events.CommEvent;
 
 
 

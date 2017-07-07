@@ -1,15 +1,10 @@
 package com.addrone;
 
-import com.multicopter.java.CommDispatcher;
-import com.multicopter.java.CommMessage;
-import com.multicopter.java.data.DebugData;
-import com.multicopter.java.events.CommEvent;
-import com.multicopter.java.events.MessageEvent;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.Transaction;
-import org.hibernate.cfg.Configuration;
-
+import com.skydive.java.CommDispatcher;
+import com.skydive.java.CommMessage;
+import com.skydive.java.data.DebugData;
+import com.skydive.java.events.CommEvent;
+import com.skydive.java.events.MessageEvent;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -22,7 +17,6 @@ public class Parser implements Runnable, CommDispatcher.CommDispatcherListener {
     private int len;
     private DataStream dataStream;
     private Logger logger = Logger.getLogger(Parser.class.getName());
-    private Session session;
 
     public Parser(DataStream dataStream) {
         //session = ServerMain.sessionFactory.openSession();
