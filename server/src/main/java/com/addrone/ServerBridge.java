@@ -3,10 +3,7 @@ package com.addrone;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -34,7 +31,8 @@ public class ServerBridge {
                 ServerClient client = new ServerClient(socket, this);
                 client.initialize();
                 clients.add(client);
-                System.out.println("New client connected from: " + socket.getInetAddress().toString());
+                System.out.println("New client connected from: \"" + socket.getInetAddress().toString()
+                        + "\" with id: " + client.getId().toString());
                 executorService.execute(client);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -42,11 +40,12 @@ public class ServerBridge {
         }
     }
 
-    public void broadcast(byte b[], int off, int len) {
-        System.out.println("ServerBridge:broadcast size: " + String.valueOf(len) +
-                " to " + String.valueOf(clients.size()) + " clients");
+    public void broadcast(final byte b[], final int off, final int len, final UUID source) {
+        System.out.println("ServerBridge:broadcast size: " + String.valueOf(len)
+                + " to " + String.valueOf(clients.size()) + " clients");
         ArrayList<ServerClient> toRemove = new ArrayList<>();
         for (ServerClient c : clients) {
+            if (c.getId().equals(source)) continue; // do not forward message to source itself
             try {
                 c.send(b, off, len);
             } catch (IOException e) {

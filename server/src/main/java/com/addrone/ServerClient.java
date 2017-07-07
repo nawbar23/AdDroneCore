@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.UUID;
 
 /**
  * Created by nawba on 07.07.2017.
@@ -12,6 +13,8 @@ public class ServerClient implements Runnable {
 
     private Socket socket;
     private ServerBridge server;
+
+    private final UUID id = UUID.randomUUID();
 
     private InputStream input;
     private OutputStream output;
@@ -38,6 +41,10 @@ public class ServerClient implements Runnable {
         }
     }
 
+    public UUID getId() {
+        return id;
+    }
+
     @Override
     public void run() {
         System.out.println("Running ServerClient forwarding thread");
@@ -49,7 +56,7 @@ public class ServerClient implements Runnable {
                 if (len > 1024) len = 1024;
                 if(len > 0) {
                     int read = input.read(bytes, 0, len);
-                    server.broadcast(bytes, 0, read);
+                    server.broadcast(bytes, 0, read, id);
                 }
                 try {
                     Thread.sleep(1);
