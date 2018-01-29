@@ -11,7 +11,7 @@ import java.util.concurrent.Executors;
 public class UartMain {
 
     public static void main(String[] args) {
-        String port = "COM4";
+        String port = "COM7";
         if (args.length > 0 && args[0] != null) {
             port = args[0];
         }
@@ -23,27 +23,35 @@ public class UartMain {
 
         ExecutorService executorService = Executors.newCachedThreadPool();
 
-        UartComm uart = new UartComm();
-        uart.setPort(port);
+        while (true) {
+            UartComm uart = new UartComm();
+            uart.setPort(port);
 
-        TcpPeer tcpPeer = new TcpPeer(executorService, false);
-        tcpPeer.setIpAddress(serverAddress);
-        tcpPeer.setPort(6666);
+            TcpPeer tcpPeer = new TcpPeer(executorService, true);
+            tcpPeer.setIpAddress(serverAddress);
+            tcpPeer.setPort(6666);
 
-        UartTcpBridge bridge = new UartTcpBridge(uart, tcpPeer);
+            UartTcpBridge bridge = new UartTcpBridge(uart, tcpPeer);
 
-        uart.connect();
+            uart.connect();
 
 
-        while (bridge.keepLoop == false) {
-            try
-            {
-                Thread.sleep(100);
+            while (bridge.keepLoop == false) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    System.out.println("Thread exception, leave transmission loop");
+                    bridge.keepLoop = false;
+                }
             }
-            catch(InterruptedException e) {
-                System.out.println("Thread exception, leave transmission loop");
-                bridge.keepLoop = false;
+
+            bridge.close();
+
+            try {
+                Thread.sleep(300);
+            } catch (InterruptedException ignored) {
             }
+            System.out.println("\nRerunning adapter\n");
         }
     }
 }
