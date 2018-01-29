@@ -36,7 +36,7 @@ public class UartMain {
             uart.connect();
 
 
-            while (bridge.keepLoop == false) {
+            while (!bridge.keepLoop) {
                 try {
                     Thread.sleep(100);
                 } catch (InterruptedException e) {
