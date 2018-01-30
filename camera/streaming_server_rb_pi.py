@@ -40,8 +40,7 @@ while True:
         
            #if time.time() - start > 1200:
            #    break
-			
-		   time.sleep(0.088)
+           time.sleep(0.088)
 			
            stream.seek(0)
            stream.truncate()
