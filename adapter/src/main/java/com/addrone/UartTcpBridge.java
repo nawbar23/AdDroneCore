@@ -50,7 +50,7 @@ public class UartTcpBridge {
             public void onDataReceived(byte[] data, int dataSize) {
                 byte[] tempData = new byte[dataSize];
                 System.arraycopy(data,0,tempData,0,dataSize);
-                tcpInterface.send(tempData);
+                tcpInterface.send(tempData, dataSize);
                 lastReception = System.currentTimeMillis();
             }
         };
@@ -78,7 +78,7 @@ public class UartTcpBridge {
             public void onDataReceived(byte[] data, int dataSize) {
                 byte[] tempData = new byte[dataSize];
                 System.arraycopy(data,0,tempData,0,dataSize);
-                uartInterface.send(tempData);
+                uartInterface.send(tempData, dataSize);
                 started = true;
                 lastReception = System.currentTimeMillis();
             }

@@ -31,11 +31,11 @@ public class UartTestMain implements UavManager.UavManagerListener,
 
         keepConnection = true;
 
-        uavManager = new UavManager(uart, 25.0, 2.0);
+        uavManager = new UavManager(25.0, 2.0);
         uavManager.registerListener(this);
         uavManager.setControlDataSource(this);
 
-        uart.connect();
+        uavManager.connect(uart);
 
         while (keepConnection) {
             try {

@@ -65,7 +65,7 @@ public class TcpPeer extends CommInterface implements Runnable  {
     }
 
     @Override
-    public void send(byte[] data) {
+    public void send(byte[] data, int dataSize) {
         try {
             //System.out.println("Sending: 0x" + CommMessage.byteArrayToHexString(data));
             outputStream.write(data, 0, data.length);

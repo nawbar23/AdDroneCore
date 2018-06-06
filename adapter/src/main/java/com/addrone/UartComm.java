@@ -44,11 +44,13 @@ public class UartComm extends CommInterface implements SerialPortEventListener {
     }
 
     @Override
-    public void send(byte[] data) {
+    public void send(byte[] data, int dataSize) {
         if(data.length!=0)
         System.out.println("Uart Sending: 0x" + CommMessage.byteArrayToHexString(data));
         try {
-            serialPort.writeBytes(data);
+            byte[] buffer = new byte[dataSize];
+            System.arraycopy(data, 0, buffer, 0, dataSize);
+            serialPort.writeBytes(buffer);
         } catch (SerialPortException e) {
             System.out.println("Send error\n");
             listener.onError(new IOException(e.getMessage(), e.getCause()));
