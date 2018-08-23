@@ -12,8 +12,6 @@ import java.util.concurrent.Executors;
  */
 public class ServerBridge {
 
-    private static final int SERVER_PORT = 9999;
-
     private ExecutorService executorService;
     private List<ServerClient> clients;
 
@@ -22,9 +20,9 @@ public class ServerBridge {
         clients = Collections.synchronizedList(new LinkedList<>());
     }
 
-    public void run() throws IOException {
-        System.out.println("ServerBridge:start on port: " + String.valueOf(SERVER_PORT));
-        ServerSocket serverSocket = new ServerSocket(SERVER_PORT);
+    public void run(int port) throws IOException {
+        System.out.println("ServerBridge:start on port: " + String.valueOf(port));
+        ServerSocket serverSocket = new ServerSocket(port);
         while (true) {
             try {
                 Socket socket = serverSocket.accept();

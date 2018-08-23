@@ -79,10 +79,17 @@ public class ServerMain {
         }
     }
 
+    private static final int SERVER_PORT = 9999;
+
     public static void main(String[] args) {
-        //ServerMain serverMain = new ServerMain(ServerMode.BRIDGE);
+
+        int port = SERVER_PORT;
+        if (args.length == 1) {
+            port = Integer.parseInt(args[0]);
+        }
+
         try {
-            new ServerBridge().run();
+            new ServerBridge().run(port);
         } catch (Exception ex) {
             ex.printStackTrace();
         }
